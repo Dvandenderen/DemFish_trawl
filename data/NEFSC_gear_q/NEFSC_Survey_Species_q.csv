@@ -1,0 +1,87 @@
+Name,SVSPP,q_edwards,q_assess,q_infer,GRP
+Hagfish,1,,,,GRP2
+Roughtail_Stingray,4,,,0.15,GRP3
+Smooth_Dogfish,13,,,0.3,GRP7
+Spiny_Dogfish,15,0.29,0.95,,GRP7
+Barndoor_Skate,22,0.1,,,GRP3
+Winter_Skate,23,0.2,,,GRP3
+Clearnose_Skate,24,,,0.15,GRP3
+Rosette_Skate,25,,,0.15,GRP3
+Little_Skate,26,0.15,,,GRP3
+Smooth_Skate,27,,,0.15,GRP3
+Thorny_Skate,28,0.1,,,GRP3
+Round_Herring,31,,,0.05,GRP6
+Atlantic_Herring,32,,0.02,,GRP6
+Alewife,33,0.37,,,GRP6
+Blueback_Herring,34,,,0.05,GRP6
+American_Shad,35,,,0.05,GRP6
+Atlantic_Medhaden,36,,,0.05,GRP6
+Capelin,38,,,0.02,GRP6
+Bay_Anchovy,43,,,0.02,GRP6
+Striped_Anchovy,44,,,0.02,GRP6
+Atlantic_Argentine,46,0.018,,,GRP6
+Offshore_Hake,69,,,0.5,GRP4
+Silver_Hake,72,0.04,,,GRP4
+Atlantic_Cod,73,0.28,,,GRP4
+GoM Cod,73,,0.3,,GRP4
+GB Cod,73,,0.11,,GRP4
+Haddock,74,0.48,0.33,,GRP4
+Pollock,75,0.08,,,GRP4
+White_Hake,76,0.51,,,GRP4
+Red_Hake,77,,,0.5,GRP4
+Spotted_Hake,78,,,0.5,GRP4
+Longfin_Hake,79,0.42,,,GRP4
+Fourbeard_Rockling,83,,,0.4,GRP2
+Cusk,84,,,0.4,GRP2
+Greenland_Halibut,99,,,0.4,GRP3
+Atlantic_Halibut,101,0.38,,,GRP3
+American_Plaice,102,0.28,0.26,,GRP3
+Summer_Flounder,103,,0.04,,GRP3
+Fourspot_Flounder,104,0.49,,,GRP3
+Yellowtail_Flounder,105,0.39,,,GRP3
+Cape Cod YT,105,,0.14,,GRP3
+SNE YT,105,,0.16,,GRP3
+Georges Bank YT,105,0.17,,,GRP3
+Winter_Flounder,106,,0.19,,GRP3
+GoM Winter Fl,106,0.19,,,GRP3
+SNE Winter Fl,106,0.17,,,GRP3
+Winter_Flounder,106,,0.19,,GRP3
+Witch_Flounder,107,0.49,0.09,,GRP3
+Windowpane_Flounder,108,0.09,,,GRP3
+Gulfstream_Flounder,109,,,0.1,GRP3
+Atlantic_Mackerel,121,,0.04,,GRP6
+Butterfish,131,,,0.2,GRP4
+Bluefish,135,,0.21,,GRP6
+Atlantic_Croaker,136,,,0.4,GRP2
+Striped_Bass,139,,,0.2,GRP2
+Black_Sea_Bass,141,,,0.2,GRP2
+Scup,143,0.05,,,GRP2
+Weakfish,145,,,0.4,GRP2
+Spot,149,,,0.4,GRP2
+Acadian_Redfish,155,0.27,0.34,,GRP4
+Blackbelly_Rosefish,156,,,0.3,GRP2
+Hookear_Sculpin_Unclassified,159,,,0.4,GRP7
+Moustache_Sculpin,161,,,0.4,GRP7
+Longhorn_Sculpin,163,0.42,,,GRP7
+Sea_Raven,164,0.9,,,GRP7
+Alligatorfish,165,,,0.4,GRP7
+Lumpfish,168,,,0.3,GRP7
+Northern_Sea_Robin,171,,,0.4,GRP7
+Tautog,177,,,0.4,GRP4
+Northern_Sandlance,181,,,0.02,GRP1
+Snake_Blenny,182,,,0.3,GRP2
+Daubed_Shanny,183,,,0.3,GRP2
+Atlantic_Wolffish,192,0.16,,,GRP7
+Ocean_Pout,193,0.31,,,GRP7
+Goosefish,197,0.32,,,GRP7
+Zoarcidae,267,,,0.2,GRP7
+American_Lobster,301,,,0.2,NA
+Northern_Shrimp,306,,,0.2,NA
+Red_Crab,310,,,0.2,NA
+Horseshoe_Crab,318,,,0.2,NA
+Atlantic_Sturgeon,380,,,0.4,GRP2
+Shortfin_Squid,502,,,0.3,NA
+Long-finned_Squid,503,,,0.3,NA
+Spotted_Trout,645,,,0.4,GRP2
+Red_Drum,654,,,0.4,GRP2
+Spanish_Mackerel,745,,,0.2,GRP6

@@ -1,7 +1,7 @@
 
-# run norw_dat up to get species catchabilities per length class
+# run to get species catchabilities per length class
 
-load("data/Walkeretal_2017_supp/Names_DATRAS_Walker_match.Rdata")
+load("traits and species/Names_DATRAS_Walker_match.Rdata")
 
 datq <- norw_dat %>% 
   select(Family, Genus, Species, AphiaID) %>% 

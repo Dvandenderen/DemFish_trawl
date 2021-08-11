@@ -38,7 +38,7 @@ colnames(survey_new)[ncol(survey_new)] <- "q_group2"
 survey_new$q_group <- ifelse(is.na(survey_new$q_group), survey_new$q_group2,survey_new$q_group) 
 
 # and for the remaining species use trait information to classify
-traits <- read.csv("data/Beukhofetal_2019/Traits_fish.csv",header=T,sep=";",row.names=NULL)
+traits <- read.csv("traits and species/Beukhofetal_2019/Traits_fish.csv",header=T,sep=";",row.names=NULL)
 survey_new <- cbind(survey_new,traits[match(survey_new$Species,traits$taxon),c("habitat","body.shape")])
 
 survey_new$q_group3 <- NA
@@ -83,6 +83,6 @@ q_names <- survey_new %>%
   distinct(AphiaID,Species,Genus,Family,q_group)
 row.names(survey_new) <- NULL
 
-save(q_names,file="data/Walkeretal_2017_supp/Names_DATRAS_Walker_match.Rdata")
+save(q_names,file="traits and species/Names_DATRAS_Walker_match.Rdata")
 
 rm(survey_new,geareff_gov,tt,geareff,uni_name,latinname,my_sp_taxo,my_sp_taxo2,df_test,df_test2,traits)

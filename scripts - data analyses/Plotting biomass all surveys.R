@@ -1,86 +1,29 @@
 
-source()
-
-
-
+# get libraries
 library(dplyr)
+library(raster)
+library(sp)
+library(rgdal)
 
-datras <- survey3
-norw   <- norw_dat
-adapt <- full
 
-# Datras
-  # add estimated weights from length x weight when weight is not available
-  #datras$wgth <- ifelse(is.na(datras$wgth),datras$wgtlenh,datras$wgth)
-  datras$wgth <- datras$wgtlenh_q  
-  #datras$wtcpue <- ifelse(is.na(datras$wtcpue),datras$wgtlencpue,datras$wtcpue)
-  datras$wtcpue <- datras$wgtlencpue_q
-  
-  # remove hauls where cpue data is not available
-  noCpue <- subset(datras,datras$wgth >0 & is.na(datras$wtcpue))
-  noCpue <- unique(noCpue$HaulID)
-  
-  datras <- datras %>%
-    filter(!(HaulID %in% noCpue)) %>%
-    dplyr::select(HaulID,Survey,Year,Month,ShootLong,ShootLat,Area.swept,Area.doors,Gear,Depth,Species,wgth,wtcpue) 
-
-# add Norway
-   # add estimated weights from length x weight when weight is not available
-  norw$wgth <- ifelse(is.na(norw$wgth),norw$wgtlenh,norw$wgth)
-  norw$wtcpue <- ifelse(is.na(norw$wtcpue),norw$wgtlencpue,norw$wtcpue)
-  
-  # remove hauls where cpue data is not available
-  noCpue <- subset(norw,norw$wgth >0 & is.na(norw$wtcpue))
-  noCpue <- unique(noCpue$HaulID)
-  
-  norw <- norw %>%
-    filter(!(HaulID %in% noCpue)) %>%
-    dplyr::select(HaulID,Survey,Year,Month,ShootLong,ShootLat,Area.swept,Area.doors,Gear,Depth,Species,wgth,wtcpue) 
-
-# combine
-  trawl <- rbind(datras,norw)
+# get cleaned data
+source("scripts - data processing/source_combine_all_surveys_after_cleaning.R")
+trawl_backup <- trawl
 
 # select years from 2000
-  trawl <- subset(trawl, trawl$Year > 2000)
+  trawl <- subset(trawl, trawl$year > 2000)
   
-# remove planktivorous fish
-  #traits <- read.csv("C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Data analysis/Bottom trawl surveys/Traits_fish.csv",header=T,sep=";",row.names=NULL)
-  #trawl <- cbind(trawl,traits[match(trawl$Species,traits$taxon),c("feeding.mode")])
-  #colnames(trawl)[ncol(trawl)] <- "feeding"
-  #trawl <- subset(trawl,!(trawl$feeding =="planktivorous"))
+# remove pelagic fish?
+  #trawl <- subset(trawl,!(trawl$type =="pel"))
   
 # summarize per haul id
   trawl <- trawl %>% 
-    group_by(HaulID,Survey,Year,Month,ShootLong,ShootLat,Area.swept,Area.doors,Gear,Depth) %>%
-    summarize_at(.vars=c('wgth', 'wtcpue'), .funs = function(x) sum(x)) %>% 
-    dplyr::select(HaulID,Survey,Year,Month,ShootLong,ShootLat,Area.swept,Area.doors,Gear,Depth,wgth,wtcpue) %>%
+    group_by(haulid,region,gear,year,month,lon,lat) %>%
+    summarize_at(.vars=c('wtcpue', 'wtcpue_q'), .funs = function(x) sum(x)) %>% 
+    select(haulid,region,gear,year,month,lon,lat,wtcpue,wtcpue_q) %>%
     as.data.frame()
 
-  trawl <- subset(trawl,!(trawl$Survey == "Can-Mar"))
-  
-# add ocean adapt 
-  # load oceanadapt_species_qvalues (gd_new)
-  adapt <- cbind(adapt,gd_new[match(adapt$spp,gd_new$spec),c("Efficiency")])
-  colnames(adapt)[ncol(adapt)]<-"Efficiency"
-  adapt <- subset(adapt,!(is.na(adapt$Efficiency))) # all others are invertebrates
-  adapt$wtcpue <- adapt$wtcpue/adapt$Efficiency 
-  
-  adapt <- adapt %>% 
-    group_by(haulid,region,year,lat,lon,depth) %>%
-    summarize_at(.vars=c('wtcpue'), .funs = function(x) sum(x,na.rm=T)) %>% 
-    dplyr::select(haulid,region,year,lat,lon,depth,wtcpue) %>%
-    as.data.frame()
-    
-  adapt <- subset(adapt, adapt$year > 2000)
-  adapt$wtcpue <- adapt$wtcpue * 100 #kg/HA to kg/km2
-  #adapt <- subset(adapt,!(adapt$region == "Maritimes Summer"))
-  
-  newtrawl <- trawl[,c(1,2,3,6,5,10,12)]
-  colnames(newtrawl) <- colnames(adapt)  
-  
-  trawl <- rbind(newtrawl,adapt)
-    
-# remove lowest and highest 1% of wgtcpue per survey
+# remove lowest and highest 2% of wgtcpue_q per survey
   high <- trawl %>%
     group_by(region)  %>%
        slice_max(wtcpue, prop = 0.02) 
@@ -96,97 +39,93 @@ adapt <- full
   as.data.frame()
 
 # estimate kg per km2 on a 1 degree grid
-setwd("C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Data analysis/Bottom trawl surveys/")
-trawl$uniq <- paste(trawl$lon,trawl$lat,sep="_")
-coords_uni <- unique(trawl$uniq)
-t <- strsplit(coords_uni, "_")
-coords<- matrix(unlist(t), ncol=2, byrow=TRUE)
-coords <- as.data.frame(coords)
-coords[,1] <- as.numeric(as.character(coords[,1]))
-coords[,2] <- as.numeric(as.character(coords[,2]))
-coords[,3] <- coords_uni
- 
-library(raster)
-library(sp)
-library(rgdal)
+  setwd("C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Data analysis/Bottom trawl surveys/")
+  trawl$uniq <- paste(trawl$lon,trawl$lat,sep="_")
+  coords_uni <- unique(trawl$uniq)
+  t <- strsplit(coords_uni, "_")
+  coords<- matrix(unlist(t), ncol=2, byrow=TRUE)
+  coords <- as.data.frame(coords)
+  coords[,1] <- as.numeric(as.character(coords[,1]))
+  coords[,2] <- as.numeric(as.character(coords[,2]))
+  coords[,3] <- coords_uni
 
 # assign area of interest one degrees
-gt<-(GridTopology(c(-179.5, -89.5), c(1, 1), c(360, 180))) # c(long, lat), c(cellsize long, lat), c(nb of grids long, lat)
-grt<-SpatialGrid(gt, proj4string=CRS("+init=epsg:4326"))
-spix <- as(grt, "SpatialPixels")
-spol <- as(spix, "SpatialPolygons")
-rnames<-sapply(slot(spol, "polygons"), function(x) slot(x, "ID"))
-LOCUNI<-as.data.frame(seq(1,length(spix)))
-rownames(LOCUNI)<-rnames
-bargrid<-SpatialPolygonsDataFrame(spol, LOCUNI)
-bargrid@bbox # make sure "min" is a whole number
-bargrid@data$uni <- c(1:length(bargrid))
+  gt<-(GridTopology(c(-179.5, -89.5), c(1, 1), c(360, 180))) # c(long, lat), c(cellsize long, lat), c(nb of grids long, lat)
+  grt<-SpatialGrid(gt, proj4string=CRS("+init=epsg:4326"))
+  spix <- as(grt, "SpatialPixels")
+  spol <- as(spix, "SpatialPolygons")
+  rnames<-sapply(slot(spol, "polygons"), function(x) slot(x, "ID"))
+  LOCUNI<-as.data.frame(seq(1,length(spix)))
+  rownames(LOCUNI)<-rnames
+  bargrid<-SpatialPolygonsDataFrame(spol, LOCUNI)
+  bargrid@bbox # make sure "min" is a whole number
+  bargrid@data$uni <- c(1:length(bargrid))
 
-coord <-data.frame(Longitude = coords[,1], Latitude = coords[,2])
-coordinates(coord)<- ~ Longitude + Latitude  
-crs(coord) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
-bargrid <- spTransform(bargrid,CRS(proj4string(coord))) # make it similar to bargrid
-bargrid@proj4string # check coordinates reference system again
-tr <- over(coord,bargrid)
-coords$one_degrees <- tr$uni
+  coord <-data.frame(Longitude = coords[,1], Latitude = coords[,2])
+  coordinates(coord)<- ~ Longitude + Latitude  
+  crs(coord) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+  bargrid <- spTransform(bargrid,CRS(proj4string(coord))) # make it similar to bargrid
+  bargrid@proj4string # check coordinates reference system again
+  tr <- over(coord,bargrid)
+  coords$one_degrees <- tr$uni
 
 # now get kg per km2 per 1 degrees grid
-trawl <- cbind(trawl,coords[match(trawl$uniq,coords[,3]),c("one_degrees")])
-colnames(trawl)[ncol(trawl)] <- "one_degrees"
-
-cpue <- trawl %>%
-  group_by(one_degrees) %>%
-  summarise_at (c("wtcpue"),mean, na.rm=T) %>%
-  as.data.frame ()
-
-bargrid <- cbind(bargrid,cpue[match(bargrid@data$uni,cpue$one_degrees),c("wtcpue")])
-colnames(bargrid@data)[ncol(bargrid@data)] <- "wtcpue"
-ncoords <- subset(bargrid,!(is.na(bargrid@data$wtcpue)))
-
-filedata <- data.frame(coordinates(ncoords))
-colnames(filedata) <- c("long","lat")
+  trawl <- cbind(trawl,coords[match(trawl$uniq,coords[,3]),c("one_degrees")])
+  colnames(trawl)[ncol(trawl)] <- "one_degrees"
+  
+  cpue <- trawl %>%
+    group_by(one_degrees) %>%
+    summarise_at (c("wtcpue"),mean, na.rm=T) %>%
+    as.data.frame ()
+  
+  bargrid <- cbind(bargrid,cpue[match(bargrid@data$uni,cpue$one_degrees),c("wtcpue")])
+  colnames(bargrid@data)[ncol(bargrid@data)] <- "wtcpue"
+  ncoords <- subset(bargrid,!(is.na(bargrid@data$wtcpue)))
+  
+  filedata <- data.frame(coordinates(ncoords))
+  colnames(filedata) <- c("long","lat")
 
 # Get the world map
-ctrys <- rnaturalearth::ne_countries(scale = 50, returnclass = "sf")
-minlong <- -180 #round(min(filedata$long)-1)
-maxlong <- 51
-minlat  <- 23
-maxlat  <- 83
-coordslim <- c(minlong,maxlong,minlat,maxlat)
-coordxmap <- round(seq(minlong,maxlong,length.out = 4))
-coordymap <- round(seq(minlat,maxlat,length.out = 4))
-
-ncoords$wtcpue <- ncoords$wtcpue/1000
-ncoords$wtcpue_plot <- ncoords$wtcpue
-ncoords$wtcpue_plot[ncoords$wtcpue_plot >100] <- 100
-
-nco <- sf::st_as_sf(ncoords)
+  ctrys <- rnaturalearth::ne_countries(scale = 50, returnclass = "sf")
+  minlong <- -180 #round(min(filedata$long)-1)
+  maxlong <- 51
+  minlat  <- 23
+  maxlat  <- 83
+  coordslim <- c(minlong,maxlong,minlat,maxlat)
+  coordxmap <- round(seq(minlong,maxlong,length.out = 4))
+  coordymap <- round(seq(minlat,maxlat,length.out = 4))
+  
+  ncoords$wtcpue <- ncoords$wtcpue/1000
+  ncoords$wtcpue_plot <- ncoords$wtcpue
+  ncoords$wtcpue_plot[ncoords$wtcpue_plot >100] <- 100
+  
+  nco <- sf::st_as_sf(ncoords)
 
 ## make color scale
-sealand = c("#8C66FF", "#6A66FF", "#6684FF", "#66A7FF", 
-            "#66CAFF", "#66ECFF", "#66FFF0", "#66FFCE", "#66FFAB", "#66FF88", 
-            "#66FF66", "#88FF66", "#ABFF66", "#CEFF66", "#FFEEA6", "#FFD3A6", 
-            "#FFB8A6", "#FFAAB0", "#FFB5CB", "#FFC0E1")
-
-color_pallet_function <- colorRampPalette(colors = sealand)
-
-figmap <- ggplot(nco) + 
-  geom_sf( aes(fill=wtcpue_plot), colour = NA ) + 
-  scale_fill_gradientn(colours=color_pallet_function(30),name="Tonnes / km2") +
-  geom_sf(data = ctrys, fill="dark grey",colour=NA) 
-
-figmap <-  figmap +  theme(plot.background=element_blank(),
-                           panel.background=element_blank(),
-                           axis.text.y   = element_text(size=11),
-                           axis.text.x   = element_text(size=11),
-                           axis.title.y  = element_text(size=11),
-                           axis.title.x  = element_text(size=11),
-                           panel.border  = element_rect(colour = "grey", size=.5,fill=NA),
-                           legend.text   = element_text(size=11),
-                           legend.title  = element_text(size=11))+
-  coord_sf(xlim = c(-180, 51), ylim = c(20, 84), expand = FALSE) +
-  scale_x_continuous(breaks=coordxmap)  +
-  scale_y_continuous(breaks=coordymap)
+  sealand = c("#8C66FF", "#6A66FF", "#6684FF", "#66A7FF", 
+              "#66CAFF", "#66ECFF", "#66FFF0", "#66FFCE", "#66FFAB", "#66FF88", 
+              "#66FF66", "#88FF66", "#ABFF66", "#CEFF66", "#FFEEA6", "#FFD3A6", 
+              "#FFB8A6", "#FFAAB0", "#FFB5CB", "#FFC0E1")
+  
+  color_pallet_function <- colorRampPalette(colors = sealand)
+  
+  figmap <- ggplot(nco) + 
+    geom_sf( aes(fill=wtcpue_plot), colour = NA ) + 
+    scale_fill_gradientn(colours=color_pallet_function(30),name="Tonnes / km2") +
+    geom_sf(data = ctrys, fill="dark grey",colour=NA) 
+  
+  figmap <-  figmap +  theme(plot.background=element_blank(),
+                             panel.background=element_blank(),
+                             axis.text.y   = element_text(size=11),
+                             axis.text.x   = element_text(size=11),
+                             axis.title.y  = element_text(size=11),
+                             axis.title.x  = element_text(size=11),
+                             panel.border  = element_rect(colour = "grey", size=.5,fill=NA),
+                             legend.text   = element_text(size=11),
+                             legend.title  = element_text(size=11))+
+    coord_sf(xlim = c(-180, 51), ylim = c(20, 84), expand = FALSE) +
+    scale_x_continuous(breaks=coordxmap)  +
+    scale_y_continuous(breaks=coordymap)
 
 
 # load marine ecoregions and calculate average per region in tonnes/km2

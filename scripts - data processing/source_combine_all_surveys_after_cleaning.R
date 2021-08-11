@@ -24,14 +24,14 @@ noCpue <- unique(noCpue$HaulID)
 
 datras <- datras %>%
   filter(!(HaulID %in% noCpue)) %>%
-  dplyr::select(HaulID,Survey,Gear,Year,Month,ShootLong,ShootLat,Area.swept,Depth,Family,Species,wgth,wtcpue,wgth_q,wtcpue_q) 
+  select(HaulID,Survey,Gear,Year,Month,ShootLong,ShootLat,Area.swept,Depth,Family,Species,wgth,wtcpue,wgth_q,wtcpue_q) 
 
 datras <- subset(datras,!(datras$Survey == "Can-Mar"))
 
 #########################
 # load Norway data #
 ########################
-load("C:/Users/danie/Documents/Online for git/CleanTrawlNAmEUr/data/NORBTS10Aug_withq.RData")
+load("cleaned data/NORBTS10Aug_withq.RData")
 norw   <- norw_dat
 
 # rename corrected data based on gear efficiency q's
@@ -48,7 +48,7 @@ noCpue <- unique(noCpue$HaulID)
 
 norw <- norw %>%
   filter(!(HaulID %in% noCpue)) %>%
-  dplyr::select(HaulID,Survey,Gear,Year,Month,ShootLong,ShootLat,Area.swept,Depth,Family,Species,wgth,wtcpue,wgth_q,wtcpue_q) 
+  select(HaulID,Survey,Gear,Year,Month,ShootLong,ShootLat,Area.swept,Depth,Family,Species,wgth,wtcpue,wgth_q,wtcpue_q) 
 
 # combine datras with norw 
 trawl <- rbind(datras,norw)
@@ -56,7 +56,7 @@ trawl <- rbind(datras,norw)
 #########################
 # load oceanadapt data #
 ########################
-adapt <- readRDS("C:/Users/danie/Documents/Online for git/OceanAdapt/OceanAdapt-master/data_clean/all-regions-full-dvd.rds")
+adapt <- readRDS("cleaned data/all-regions-full-oceanadapt.rds")
 load("C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Gear and catches/oceanadapt_species_qvalues.RData")
 
 adapt <- cbind(adapt,gd_new[match(adapt$spp,gd_new$spec),c("family","Efficiency")])
