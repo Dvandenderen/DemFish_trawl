@@ -1,3 +1,13 @@
+#############################################################
+#### Code to download and clean survey data from IMR survey
+#### Coding: Aurore Maureaud, March 2021
+
+#### 
+#### Coding updated for wingspread / catch per unit area information
+#### Coding updated with gear efficiency estimates based on Walker et al. 2017
+#### see https://doi.org/10.1093/icesjms/fsw250
+#############################################################
+
 rm(list=ls())
 
 ### Libraries
@@ -6,7 +16,7 @@ library(dplyr)
 
 ### Load files
 # First setting the working directory to the main folder with the unzipped csv files
-data_dir <- "C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Surveys/IMR-Norway/"
+data_dir <- paste(getwd(),"_noGIT/data Norway/",sep="")
 
 # we create a vector list with the filenames that match with a .csv ending
 files = list.files(data_dir,pattern="*.csv")
@@ -365,7 +375,7 @@ sp_list$aphiaID <- as.character(sp_list$aphiaID)
 #setwd('C:/Users/auma/Documents/PhD DTU Aqua/(iv) Clean surveys/2. Clean taxonomy')
 #write.csv(sp_list, file='sp_list_europe_2004_2017.csv', row.names=FALSE)
 
-clean.names <- read.csv('data/check.species.old.names.WORMS.csv')
+clean.names <- read.csv('traits and species/check.Norway.names.WORMS.csv')
 clean.names$aphiaID <- NULL
 setnames(sp_list, old='species.cleaned', new='ScientificName')
 # species = to match back with dataset
@@ -464,7 +474,7 @@ list.taxa <- norw_dat %>%
 
 # get LME
 library(rgdal)
-shape1 <- readOGR(dsn = "C:/Users/danie/Dropbox/Werk/Archief/2018 Nat Eco Evo/LME shapefile",layer="lme66")
+shape1 <- readOGR(dsn = "data/LME shapefile",layer="lme66")
 coords <- list.taxa %>%
   dplyr::select(ShootLat, ShootLong, Survey) %>%
   distinct()
@@ -520,11 +530,10 @@ list.taxa <- norw_dat %>%
          Subspecies = str_split(Species, pattern = " ", simplify=T)[,3],
          Species = str_split(Species, pattern = " ", simplify=T)[,2],
          Species = if_else(Subspecies!="", paste(Species, Subspecies, sep=" "), Species))
-#write.csv(data.frame(list.taxa), file="traits/taxa.NorwDat.FB.tofill.csv", row.names=FALSE)
-#save(survey, file = "data/DATRAS_before_lw_xxxxx.RData") # could save intermediate stage
+#write.csv(data.frame(list.taxa), file="traits and species/taxa.NorwDat.FB.tofill.csv", row.names=FALSE)
 
 # 2. re-calculate weights with length-weight relationships
-datalw <- read.csv('traits/taxa.NorwDat.FB_filled.csv') %>% 
+datalw <- read.csv('traits and species/taxa.NorwDat.FB_filled.csv') %>% 
   mutate(Taxon = case_when(level=='family' ~ family,
                            level=='genus' ~ genus,
                            level=='species' ~ paste(genus, species, sep=" ")),
@@ -548,8 +557,8 @@ norw_dat$wgtlenh <- norw_dat$a*norw_dat$Length^norw_dat$b*norw_dat$numlenh/1000
 norw_dat$wgtlencpue <- norw_dat$a*norw_dat$Length^norw_dat$b*norw_dat$numlencpue/1000
 
 # get species catchabilities per length class
-source('C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Gear and catches/fsw250_supp/Merge_names_walker_with_Norway.R')
-conversions <- read.csv("C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Gear and catches/fsw250_supp/EfficiencyTab.csv",header=T,sep=",")
+source('scripts - data processing/Merge_names_walker_with_Norway.R')
+conversions <- read.csv("data/Walkeretal_2017_supp/EfficiencyTab.csv",header=T,sep=",")
 conversions <- subset(conversions,conversions$Gear =="GOV")
 
 # combine q_group/q_species code with norw_dat 
@@ -597,7 +606,7 @@ lengthcl <- lengthcl %>%
 norw_dat <- left_join(subgroup, lengthcl, by=c('HaulID','Species'))
 
 
-save(norw_dat, file='data/NORBTS10Aug_withq.RData')
+save(norw_dat, file='cleaned data/NORBTS10Aug_withq.RData')
 
 
 ##########################################################################################

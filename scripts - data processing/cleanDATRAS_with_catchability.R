@@ -1,6 +1,11 @@
 #############################################################
 #### Code to download and clean survey data from DATRAS
 #### Coding: Aurore Maureaud, March 2021
+
+####
+#### Coding updated for wingspread / catch per unit area information
+#### Coding updated with gear efficiency estimates based on Walker et al. 2017
+#### see https://doi.org/10.1093/icesjms/fsw250
 #############################################################
 Sys.setenv(LANG = "en")
 rm(list=ls())
@@ -202,7 +207,7 @@ survey <- survey %>%
          !(Survey=="PT-IBTS" & Gear=='CAR'),
          !(Survey=="Can-Mar" & Gear=='Y36'))
 
-source('code/source_DATRAS_wing_doorspread.R')
+source('scripts - data processing/source_DATRAS_wing_doorspread.R')
 
 ##########################################################################################
 #### GET CPUEs AND RIGHT COLUMNS NAMES
@@ -315,9 +320,8 @@ survey <- survey %>%
 #### ADD GEAR EFFICIENCY CORRECTIONS 
 ##########################################################################################
 
-source('C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Gear and catches/fsw250_supp/Merge_names_walker_with_datras.R')
-#load("C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Gear and catches/fsw250_supp/Names_DATRAS_Walker_match.Rdata")
-conversions <- read.csv("C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Gear and catches/fsw250_supp/EfficiencyTab.csv",header=T,sep=",")
+source('scripts - data processing/Merge_names_walker_with_datras.R')
+conversions <- read.csv("data/Walkeretal_2017_supp/EfficiencyTab.csv",header=T,sep=",")
 conversions <- subset(conversions,conversions$Gear =="GOV")
 
 # combine q_group/q_species code with survey 
@@ -362,7 +366,7 @@ list.taxa <- survey %>%
 
 # get LME
 library(rgdal)
-shape1 <- readOGR(dsn = "C:/Users/danie/Dropbox/Werk/Archief/2018 Nat Eco Evo/LME shapefile",layer="lme66")
+shape1 <- readOGR(dsn = "data/LME shapefile",layer="lme66")
 coords <- list.taxa %>%
   dplyr::select(ShootLat, ShootLong, Survey) %>%
   distinct()
@@ -431,13 +435,13 @@ list.taxa <- survey %>%
          Subspecies = str_split(Species, pattern = " ", simplify=T)[,3],
          Species = str_split(Species, pattern = " ", simplify=T)[,2],
          Species = if_else(Subspecies!="", paste(Species, Subspecies, sep=" "), Species))
-#write.csv(data.frame(list.taxa), file="traits/taxa.DATRAS.FB.tofill5.csv", row.names=FALSE)
+#write.csv(data.frame(list.taxa), file="traits and species/taxa.DATRAS.FB.tofill5.csv", row.names=FALSE)
 #save(survey, file = "data/DATRAS_before_lw_xxxxx.RData") # could save intermediate stage
 
 
 # 2. re-calculate weights with length-weight relationships
 #load('DATRAS_before_lw_xxxxx.RData') 
-datalw <- read.csv('traits/taxa.DATRAS.FB_filled5.csv') %>% 
+datalw <- read.csv('traits and species/taxa.DATRAS.FB_filled5.csv') %>% 
   mutate(Taxon = case_when(level=='family' ~ family,
                            level=='genus' ~ genus,
                            level=='species' ~ paste(genus, species, sep=" ")),
@@ -688,4 +692,4 @@ cor(x = xx$wtcpue , y = xx$wgtlencpue, method = 'pearson')
 survey3 <- survey3 %>% 
   select(-num, -wgt) %>%
   as.data.frame()
-save(survey3, file='data/ICESsurveys10Aug_withq.RData')
+save(survey3, file='cleaned data/ICESsurveys10Aug_withq.RData')

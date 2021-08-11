@@ -7,7 +7,7 @@ library(dplyr)
 #########################
 # load Datras data #
 ######################## 
-load("C:/Users/danie/Documents/Online for git/CleanTrawlNAmEUr/data/ICESsurveys10Aug_withq.RData")
+load("cleaned data/ICESsurveys10Aug_withq.RData")
 datras <- survey3
 
 # rename corrected data based on gear efficiency q's
