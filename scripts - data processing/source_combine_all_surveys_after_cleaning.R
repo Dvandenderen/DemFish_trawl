@@ -24,7 +24,7 @@ noCpue <- unique(noCpue$HaulID)
 
 datras <- datras %>%
   filter(!(HaulID %in% noCpue)) %>%
-  select(HaulID,Survey,Gear,Year,Month,ShootLong,ShootLat,Area.swept,Depth,Family,Species,wgth,wtcpue,wgth_q,wtcpue_q) 
+  dplyr::select(HaulID,Survey,Gear,Year,Month,ShootLong,ShootLat,Area.swept,Depth,Family,Species,wgth,wtcpue,wgth_q,wtcpue_q) 
 
 datras <- subset(datras,!(datras$Survey == "Can-Mar"))
 
@@ -48,7 +48,7 @@ noCpue <- unique(noCpue$HaulID)
 
 norw <- norw %>%
   filter(!(HaulID %in% noCpue)) %>%
-  select(HaulID,Survey,Gear,Year,Month,ShootLong,ShootLat,Area.swept,Depth,Family,Species,wgth,wtcpue,wgth_q,wtcpue_q) 
+  dplyr::select(HaulID,Survey,Gear,Year,Month,ShootLong,ShootLat,Area.swept,Depth,Family,Species,wgth,wtcpue,wgth_q,wtcpue_q) 
 
 # combine datras with norw 
 trawl <- rbind(datras,norw)
