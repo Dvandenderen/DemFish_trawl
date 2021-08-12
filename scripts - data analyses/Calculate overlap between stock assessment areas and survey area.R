@@ -8,6 +8,7 @@ library(sp)
 library(rgeos)
 library(maptools)
 library(dplyr)
+library(sf)
 
 ###########
 ### load all survey data and create spatial object of the area surveyed
@@ -72,7 +73,11 @@ shape@data$Regions <- regions$name
 # (can probably be done better)
 # note sf::st_make_valid does not solve all issues
 
-final<-as.data.frame(matrix(data=100,ncol=2,nrow=1))
+# some polygons on land, calculate also that fraction
+land <- rnaturalearth::ne_countries(scale = 110, returnclass = "sp")
+land <- aggregate(land)
+
+final<-as.data.frame(matrix(data=100,ncol=3,nrow=1))
 
 for (j in 1:232){
   shape1 <- shape[shape$SP_ID ==j,]
@@ -282,26 +287,34 @@ for (j in 1:232){
   pi<-gIntersection(shape1,survey_area,byid = TRUE)
   if(length(pi)>0){
     if (class(pi)=="SpatialPolygons"){
-      frac<-(area(pi) / 1000000)/(area(shape1) / 1000000)
-      final<-rbind(final,c(j,frac))
+      frac  <-(area(pi) / 1000000)/(area(shape1) / 1000000)
+      pi2<-gIntersection(shape1,land,byid = TRUE)
+      frac2 <- ifelse(length(pi2) == 0, 0, (area(pi2) / 1000000)/(area(shape1) / 1000000))
+      final<-rbind(final,c(j,frac,frac2))
     }}
   print(c(j))}
 
 # few errors but okay as all in New Zealand (not needed anyway)
 
 # rename columns
-colnames(final)<-c("assess_area","fraction of assess_area in survey_area")
+colnames(final)<-c("assess_area","fraction of assess_area in survey_area","fraction on land")
 final<-final[-1,]
 final[,2]<-replace(final[,2], final[,2]>1, 1)
+final[,3]<-replace(final[,3], final[,3]>1, 1)
 
 # and get assessment region
 final<-cbind(final,regions[match(final[,"assess_area"],regions[,"SP_ID"]),c(1)])
-colnames(final)[3]<-c("assess_area_name")
+colnames(final)[4]<-c("assess_area_name")
 
 # check - looks good
 #plot(shape[19,]) #94% overlap
 #plot(survey_area,add=T,col="blue")
 #plot(shape[19,],add=T,col="red")
+
+save(final,file="cleaned data/overlap_stockass_survey_area.RData")
+
+rm(list=setdiff(ls(), c("final","trawl")))
+
 
 
 

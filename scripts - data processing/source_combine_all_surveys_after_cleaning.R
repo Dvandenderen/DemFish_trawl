@@ -88,4 +88,4 @@ pel_family <- c("Clupeidae" , "Osmeridae",  "Exocoetidae" , "Atherinidae" , "Eng
 
 trawl$type <- ifelse(trawl$family %in% pel_family,"pel","dem")
 
-rm(list=setdiff(ls(), "trawl"))
+rm(pel_family,adapt,norw,noCpue,norw_dat,datras,survey3)
