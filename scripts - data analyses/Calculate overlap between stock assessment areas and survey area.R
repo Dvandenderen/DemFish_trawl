@@ -26,7 +26,7 @@ coords[,2] <- as.numeric(as.character(coords[,2]))
 coords[,3] <- coords_uni
 
 # assign area of interest one degrees
-gt<-(GridTopology(c(-179.5, -89.5), c(1, 1), c(360, 180))) # c(long, lat), c(cellsize long, lat), c(nb of grids long, lat)
+gt<-(GridTopology(c(-179.5, -89.75), c(1, .5), c(360*1, 180*2))) # c(long, lat), c(cellsize long, lat), c(nb of grids long, lat)
 grt<-SpatialGrid(gt, proj4string=CRS("+init=epsg:4326"))
 spix <- as(grt, "SpatialPixels")
 spol <- as(spix, "SpatialPolygons")

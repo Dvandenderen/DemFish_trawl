@@ -4,33 +4,35 @@ library(dplyr)
 library(raster)
 library(sp)
 library(rgdal)
+library(ggplot2)
 
 
 # get cleaned data
 source("scripts - data processing/source_combine_all_surveys_after_cleaning.R")
 trawl_backup <- trawl
+# trawl <- trawl_backup
 
 # select years from 2000
   trawl <- subset(trawl, trawl$year > 2000)
   
 # remove pelagic fish?
-  #trawl <- subset(trawl,!(trawl$type =="pel"))
+  trawl <- subset(trawl,!(trawl$type == "pel"))
   
 # summarize per haul id
   trawl <- trawl %>% 
     group_by(haulid,region,gear,year,month,lon,lat) %>%
     summarize_at(.vars=c('wtcpue', 'wtcpue_q'), .funs = function(x) sum(x)) %>% 
-    select(haulid,region,gear,year,month,lon,lat,wtcpue,wtcpue_q) %>%
+    dplyr::select(haulid,region,gear,year,month,lon,lat,wtcpue,wtcpue_q) %>%
     as.data.frame()
 
 # remove lowest and highest 2% of wgtcpue_q per survey
   high <- trawl %>%
     group_by(region)  %>%
-       slice_max(wtcpue, prop = 0.02) 
+       slice_max(wtcpue_q, prop = 0.02) 
   
   low <- trawl %>%
     group_by(region)  %>%
-    slice_min(wtcpue, prop = 0.02) 
+    slice_min(wtcpue_q, prop = 0.02) 
   
   LH_ends <- c(unique(high$haulid),unique(low$haulid))
 
@@ -39,7 +41,6 @@ trawl_backup <- trawl
   as.data.frame()
 
 # estimate kg per km2 on a 1 degree grid
-  setwd("C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Data analysis/Bottom trawl surveys/")
   trawl$uniq <- paste(trawl$lon,trawl$lat,sep="_")
   coords_uni <- unique(trawl$uniq)
   t <- strsplit(coords_uni, "_")
@@ -75,10 +76,10 @@ trawl_backup <- trawl
   
   cpue <- trawl %>%
     group_by(one_degrees) %>%
-    summarise_at (c("wtcpue"),mean, na.rm=T) %>%
+    summarise_at (c("wtcpue_q"),mean, na.rm=T) %>%
     as.data.frame ()
   
-  bargrid <- cbind(bargrid,cpue[match(bargrid@data$uni,cpue$one_degrees),c("wtcpue")])
+  bargrid <- cbind(bargrid,cpue[match(bargrid@data$uni,cpue$one_degrees),c("wtcpue_q")])
   colnames(bargrid@data)[ncol(bargrid@data)] <- "wtcpue"
   ncoords <- subset(bargrid,!(is.na(bargrid@data$wtcpue)))
   
@@ -97,7 +98,7 @@ trawl_backup <- trawl
   
   ncoords$wtcpue <- ncoords$wtcpue/1000
   ncoords$wtcpue_plot <- ncoords$wtcpue
-  ncoords$wtcpue_plot[ncoords$wtcpue_plot >100] <- 100
+  ncoords$wtcpue_plot[ncoords$wtcpue_plot >30] <- 30
   
   nco <- sf::st_as_sf(ncoords)
 
@@ -147,6 +148,7 @@ ncoords$ECO_REG  <- tr[,2]
 
 which(table(ncoords$ECO_REG) >5)
 aggregate(ncoords$wtcpue,by=list(ncoords$ECO_REG),FUN=mean,na.rm=T)
+aggregate(ncoords$Landings,by=list(ncoords$ECO_REG),FUN=mean,na.rm=T)
 
 
 ####### fisheries data
@@ -230,12 +232,11 @@ figmap <-  figmap +  theme(plot.background=element_blank(),
 
 ##### add FEISTY predictions
 ### download biomass
-setwd("C:/Users/danie/Documents/Online for git/Fish_foodwebs/Global model parfor")
-dataglob <- read.csv("datglob.csv",header=F)
+dataglob <- read.csv("C:/Users/danie/Documents/Online for git/Fish_foodwebs/Global model parfor/datglob.csv",header=F)
 colnames(dataglob) <- c("BioZs","BioZl","BioBs","BioBl", "BioFf","BioMf","BioPf","BioBaP","BioDf")
 
 # load input parameters
-param <- read.csv("input_parameters.csv",header=T)
+param <- read.csv("C:/Users/danie/Documents/Online for git/Fish_foodwebs/Global model parfor/input_parameters.csv",header=T)
 outp <- cbind(param,dataglob)
 outp$long <- ifelse(outp$long > 179.5,outp$long-360,outp$long)
 

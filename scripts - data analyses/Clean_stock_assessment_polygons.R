@@ -9,16 +9,16 @@ if (ass_nb==11){
   shape1<-sps
 }
 
-if (ass_nb==36){
-  shape1@polygons[[1]]@Polygons[[1]]@coords<-shape1@polygons[[1]]@Polygons[[1]]@coords[-c(16,40,45),]
-  shape1@polygons[[1]]@Polygons[[4]]@coords<-shape1@polygons[[1]]@Polygons[[4]]@coords[-c(4),]
-  pls3<-Polygons(list(shape1@polygons[[1]]@Polygons[[1]],shape1@polygons[[1]]@Polygons[[2]],
-                      shape1@polygons[[1]]@Polygons[[3]],shape1@polygons[[1]]@Polygons[[4]]),35)
-  sps = SpatialPolygons(list(pls3))
-  proj4string(sps)<-CRS("+init=epsg:4326")
-  slot(sps, "polygons") <- lapply(slot(sps, "polygons"), checkPolygonsHoles)
-  shape1<-sps
-}
+#if (ass_nb==36){
+#  shape1@polygons[[1]]@Polygons[[1]]@coords<-shape1@polygons[[1]]@Polygons[[1]]@coords[-c(16,40,45),]
+#  shape1@polygons[[1]]@Polygons[[4]]@coords<-shape1@polygons[[1]]@Polygons[[4]]@coords[-c(4),]
+#  pls3<-Polygons(list(shape1@polygons[[1]]@Polygons[[1]],shape1@polygons[[1]]@Polygons[[2]],
+#                     shape1@polygons[[1]]@Polygons[[3]],shape1@polygons[[1]]@Polygons[[4]]),35)
+#  sps = SpatialPolygons(list(pls3))
+#  proj4string(sps)<-CRS("+init=epsg:4326")
+#  slot(sps, "polygons") <- lapply(slot(sps, "polygons"), checkPolygonsHoles)
+# shape1<-sps
+# }
 
 if (ass_nb==45){
   shape1@polygons[[1]]@Polygons[[2]]@coords<-shape1@polygons[[1]]@Polygons[[2]]@coords[-c(2,4,6),]

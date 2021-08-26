@@ -16,7 +16,7 @@ nefsc <- cbind(nefsc,str_split_fixed(nefsc$Sci_name, " ", 2))
 colnames(nefsc) <-c(nam,"Genus","Species")
 
 # get all species oceanadapt
-load("data/species_list_oceanadapt.RData")
+load("traits and species/oceanadapt_species_list.RData")
 goodspec <- subset(goodspec, goodspec$class %in% c("Elasmobranchii","Actinopteri","Holocephali","Myxini","Petromyzonti")) 
 goodspec$capitals <- toupper(goodspec$scientificname)
 
