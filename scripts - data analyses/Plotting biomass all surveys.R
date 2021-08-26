@@ -6,7 +6,6 @@ library(sp)
 library(rgdal)
 library(ggplot2)
 
-
 # get cleaned data
 source("scripts - data processing/source_combine_all_surveys_after_cleaning.R")
 trawl_backup <- trawl
@@ -14,18 +13,31 @@ trawl_backup <- trawl
 
 # select years from 2000
   trawl <- subset(trawl, trawl$year > 2000)
-  
-# remove pelagic fish?
-  trawl <- subset(trawl,!(trawl$type == "pel"))
-  
-# summarize per haul id
+
+# get pel and dem separate 
+  trawl_sep <- trawl %>% 
+    group_by(haulid,region,gear,year,month,lon,lat,type) %>%
+    summarize_at(.vars=c('wtcpue', 'wtcpue_q'), .funs = function(x) sum(x)) %>% 
+    dplyr::select(haulid,region,gear,year,month,lon,lat,type,wtcpue,wtcpue_q) %>%
+    as.data.frame()
+
+# now merge per staion and year
   trawl <- trawl %>% 
     group_by(haulid,region,gear,year,month,lon,lat) %>%
     summarize_at(.vars=c('wtcpue', 'wtcpue_q'), .funs = function(x) sum(x)) %>% 
     dplyr::select(haulid,region,gear,year,month,lon,lat,wtcpue,wtcpue_q) %>%
     as.data.frame()
 
-# remove lowest and highest 2% of wgtcpue_q per survey
+# add dem 
+  trawl_sep <- subset(trawl_sep,trawl_sep$type =="dem")
+  colnames(trawl_sep)[which(colnames(trawl_sep) %in% c("wtcpue","wtcpue_q"))] <- c("wtcpue_Dem","wtcpue_q_Dem")
+  
+# tot-dem == pel
+  trawl <- cbind(trawl,trawl_sep[match(trawl$haulid,trawl_sep$haulid), c("wtcpue_Dem","wtcpue_q_Dem")])
+  trawl$wtcpue_Pel <- trawl$wtcpue - trawl$wtcpue_Dem
+  trawl$wtcpue_q_Pel <- trawl$wtcpue_q - trawl$wtcpue_q_Dem
+
+# remove lowest and highest 2% of wtcpue_q per survey
   high <- trawl %>%
     group_by(region)  %>%
        slice_max(wtcpue_q, prop = 0.02) 
@@ -76,12 +88,12 @@ trawl_backup <- trawl
   
   cpue <- trawl %>%
     group_by(one_degrees) %>%
-    summarise_at (c("wtcpue_q"),mean, na.rm=T) %>%
+    summarise_at (c("wtcpue_q","wtcpue_q_Dem","wtcpue_q_Pel"),mean, na.rm=T) %>%
     as.data.frame ()
   
-  bargrid <- cbind(bargrid,cpue[match(bargrid@data$uni,cpue$one_degrees),c("wtcpue_q")])
-  colnames(bargrid@data)[ncol(bargrid@data)] <- "wtcpue"
-  ncoords <- subset(bargrid,!(is.na(bargrid@data$wtcpue)))
+  bargrid <- cbind(bargrid,cpue[match(bargrid@data$uni,cpue$one_degrees),c("wtcpue_q","wtcpue_q_Dem","wtcpue_q_Pel")])
+  #colnames(bargrid@data)[ncol(bargrid@data)] <- "wtcpue"
+  ncoords <- subset(bargrid,!(is.na(bargrid@data$wtcpue_q)))
   
   filedata <- data.frame(coordinates(ncoords))
   colnames(filedata) <- c("long","lat")
@@ -96,9 +108,17 @@ trawl_backup <- trawl
   coordxmap <- round(seq(minlong,maxlong,length.out = 4))
   coordymap <- round(seq(minlat,maxlat,length.out = 4))
   
-  ncoords$wtcpue <- ncoords$wtcpue/1000
-  ncoords$wtcpue_plot <- ncoords$wtcpue
-  ncoords$wtcpue_plot[ncoords$wtcpue_plot >30] <- 30
+  idx <- which(colnames(ncoords@data) %in% c("wtcpue_q","wtcpue_q_Dem","wtcpue_q_Pel"))
+  ncoords@data[,idx] <- ncoords@data[,idx]/1000 # kg per km2 to tonnes per km2
+  ncoords$tot_plot <- ncoords$wtcpue_q
+  ncoords$dem_plot <- ncoords$wtcpue_q_Dem
+  ncoords$pel_plot <- ncoords$wtcpue_q_Pel
+  
+  roundUp <- function(x) 10^ceiling(log10(x)) # round to nearest 10
+  ncoords$tot_plot[ncoords$tot_plot > pretty(quantile(ncoords$tot_plot, 0.95))[1]] <- pretty(quantile(ncoords$tot_plot, 0.95))[1]
+  ncoords$dem_plot[ncoords$dem_plot > pretty(quantile(ncoords$dem_plot, 0.95))[1]] <- pretty(quantile(ncoords$dem_plot, 0.95))[1]
+  ncoords$pel_plot[ncoords$pel_plot > pretty(quantile(ncoords$pel_plot, 0.95))[1]] <- pretty(quantile(ncoords$pel_plot, 0.95))[1]
+  
   
   nco <- sf::st_as_sf(ncoords)
 
@@ -111,7 +131,7 @@ trawl_backup <- trawl
   color_pallet_function <- colorRampPalette(colors = sealand)
   
   figmap <- ggplot(nco) + 
-    geom_sf( aes(fill=wtcpue_plot), colour = NA ) + 
+    geom_sf( aes(fill=pel_plot), colour = NA ) + 
     scale_fill_gradientn(colours=color_pallet_function(30),name="Tonnes / km2") +
     geom_sf(data = ctrys, fill="dark grey",colour=NA) 
   
@@ -128,29 +148,6 @@ trawl_backup <- trawl
     scale_x_continuous(breaks=coordxmap)  +
     scale_y_continuous(breaks=coordymap)
 
-
-# load marine ecoregions and calculate average per region in tonnes/km2
-library(raster)
-library(sp)
-library(rgdal)
-
-shape <- readOGR(dsn = "C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Data analysis/MEOW shapefiles" ,layer="meow_ecos")
-
-coord <-data.frame(Longitude = coordinates(ncoords)[,1], Latitude = coordinates(ncoords)[,2])
-coordinates(coord)<- ~ Longitude + Latitude  
-crs(coord) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
-
-shape <- spTransform(shape,CRS(proj4string(coord))) # make it similar to bargrid
-shape@proj4string # check coordinates reference system again
-tr <- over(coord,shape)
-ncoords$ECO_CODE <- tr[,1]
-ncoords$ECO_REG  <- tr[,2]
-
-which(table(ncoords$ECO_REG) >5)
-aggregate(ncoords$wtcpue,by=list(ncoords$ECO_REG),FUN=mean,na.rm=T)
-aggregate(ncoords$Landings,by=list(ncoords$ECO_REG),FUN=mean,na.rm=T)
-
-
 ####### fisheries data
 
 ### load Regs database 
@@ -161,15 +158,16 @@ C1014 <- readRDS("Catch_all_2010_2014.rds")
 
 Catch <- rbind(C0004,C0509,C1014)
 Catch <- subset(Catch, Catch$Funcgroup %in% c(4,5,6,13,14,15,23,24))
-Catch <- aggregate(Catch$Reported, by= list(Catch$Cell,Catch$IYear),FUN= sum,na.rm=T)
+Catch$Tot <- Catch$Reported + Catch$IUU + Catch$Discards
+Catch <- aggregate(Catch$Tot, by= list(Catch$Cell,Catch$IYear),FUN= sum,na.rm=T)
 Catch <- aggregate(Catch$x, by= list(Catch$Group.1),FUN= mean,na.rm=T)
 
 ### load Watson cells
 setwd("C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Data analysis")
 cells <- read.csv(file="World_watson.csv",sep=";",header=T)
 Catch <- cbind(Catch, cells[match(Catch$Group.1,cells$Cell), c(2:4)])
-colnames(Catch) <- c("Cell","repLand","long","lat","OceanAreasqkm")
-Catch$repLand  <- Catch$repLand/ Catch$OceanAreasqkm # tonnes / cell --> tonnes per km2
+colnames(Catch) <- c("Cell","catch","long","lat","OceanAreasqkm")
+Catch$catch  <- Catch$catch/ Catch$OceanAreasqkm # tonnes / cell --> tonnes per km2
 
 ## link to one degrees grid
 catchcoord <-data.frame(Longitude = Catch$long , Latitude = Catch$lat)
@@ -180,9 +178,9 @@ Catch$one_degrees <- tr$uni
 Catch <- subset(Catch,!(is.na(Catch$one_degrees)))
 
 # get mean per one degrees 
-TT <- aggregate(Catch$repLand, by= list(Catch$one_degrees),FUN= mean,na.rm=T)
+TT <- aggregate(Catch$catch, by= list(Catch$one_degrees),FUN= mean,na.rm=T)
 ncoords <- cbind(ncoords,TT[match(ncoords@data$uni,TT$Group.1),c("x")])
-colnames(ncoords@data)[ncol(ncoords@data)] <- "Landings"
+colnames(ncoords@data)[ncol(ncoords@data)] <- "catch"
 
 ncoords$Landings_plot <- ncoords$Landings
 ncoords$Landings_plot[ncoords$Landings_plot >3] <- 3
@@ -207,6 +205,38 @@ figmap <-  figmap +  theme(plot.background=element_blank(),
   scale_x_continuous(breaks=coordxmap)  +
   scale_y_continuous(breaks=coordymap)
 
+
+# load marine ecoregions and calculate average biomass + catch per region 
+library(raster)
+library(sp)
+library(rgdal)
+
+shape <- readOGR(dsn = "C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Data analysis/MEOW shapefiles" ,layer="meow_ecos")
+
+coord <-data.frame(Longitude = coordinates(ncoords)[,1], Latitude = coordinates(ncoords)[,2])
+coordinates(coord)<- ~ Longitude + Latitude  
+crs(coord) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+
+shape <- spTransform(shape,CRS(proj4string(coord))) # make it similar to bargrid
+shape@proj4string # check coordinates reference system again
+tr <- over(coord,shape)
+ncoords$ECO_CODE <- tr[,1]
+ncoords$ECO_REG  <- tr[,2]
+
+table(ncoords$ECO_REG)
+ncoords_new <- subset(ncoords,!(ncoords$ECO_REG %in% c("Faroe Plateau", "North and East Iceland",
+                                                       "Northern Grand Banks - Southern Labrador",
+                                                       "Puget Trough/Georgia Basin",
+                                                       "Southern Grand Banks - South Newfoundland")))
+overview <- aggregate(ncoords_new$wtcpue_q_Dem,by=list(ncoords_new$ECO_REG),FUN=mean,na.rm=T)
+overview <- cbind(overview,aggregate(ncoords_new$catch,by=list(ncoords_new$ECO_REG),FUN=mean,na.rm=T)[,2])
+colnames(overview) <-c("Ecreg","Biomass","Catch")
+overview$ER <- overview$Catch/ overview$Biomass
+overview$B_units <- "tonnes/km2"
+overview$C_units <- "tonnes/km2/Y"
+
+
+############################## check below
 ncoords$frac <- (ncoords$Landings/(ncoords$wtcpue)*100)
 ncoords$frac[ncoords$frac >60] <- 60
 nco <- sf::st_as_sf(ncoords)
