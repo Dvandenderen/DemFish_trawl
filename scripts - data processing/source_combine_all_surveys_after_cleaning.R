@@ -88,4 +88,13 @@ pel_family <- c("Clupeidae" , "Osmeridae",  "Exocoetidae" , "Atherinidae" , "Eng
 
 trawl$type <- ifelse(trawl$family %in% pel_family,"pel","dem")
 
-rm(pel_family,adapt,norw,noCpue,norw_dat,datras,survey3)
+# now select "large" fish to plot separately
+traits <- read.csv("traits and species/Beukhofetal_2019/Traits_fish.csv",header=T,sep=";",row.names=NULL)
+
+traits_large <- subset(traits,traits$length.infinity > 80)
+
+large <- unique(traits_large$taxon)
+
+trawl$size <- ifelse(trawl$spp %in% large,"large","small")
+
+rm(pel_family,adapt,norw,noCpue,norw_dat,datras,survey3,gd_new,traits,traits_large,large)
