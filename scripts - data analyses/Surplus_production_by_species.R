@@ -20,21 +20,21 @@ source("scripts - data processing/source_combine_all_surveys_after_cleaning.R")
 ##############################################
 # get all survey estimates per year on the grid - 
 
-  # get types,sizes separate
+# get species separate
 trawl_sep <- trawl %>% 
-  group_by(haulid,region,gear,year,month,lon,lat,type) %>%
+  group_by(haulid,region,gear,year,month,lon,lat,spp) %>%
   summarize_at(.vars=c('wtcpue', 'wtcpue_q'), .funs = function(x) sum(x)) %>% 
-  dplyr::select(haulid,region,gear,year,month,lon,lat,type,wtcpue,wtcpue_q) %>%
+  dplyr::select(haulid,region,gear,year,month,lon,lat,spp,wtcpue,wtcpue_q) %>%
   as.data.frame()
 
-  # now get all stations and years with data
+# now get all stations and years with data
 trawl <- trawl %>% 
-  group_by(haulid,region,gear,year,month,lon,lat,depth) %>%
+  group_by(haulid,region,gear,year,month,lon,lat) %>%
   summarize_at(.vars=c('wtcpue', 'wtcpue_q'), .funs = function(x) sum(x)) %>% 
-  dplyr::select(haulid,region,gear,year,month,lon,lat,depth,wtcpue,wtcpue_q) %>%
+  dplyr::select(haulid,region,gear,year,month,lon,lat,wtcpue,wtcpue_q) %>%
   as.data.frame()
 
-  # add the type, size, species to estimate surplus production 
+# add the type, size, species to estimate surplus production 
 trawl_sep <- subset(trawl_sep,trawl_sep$type =="dem")
 colnames(trawl_sep)[which(colnames(trawl_sep) %in% c("wtcpue","wtcpue_q"))] <- c("wtcpue_Dem","wtcpue_q_Dem")
 trawl <- cbind(trawl,trawl_sep[match(trawl$haulid,trawl_sep$haulid), c("wtcpue_Dem","wtcpue_q_Dem")])
@@ -42,21 +42,6 @@ trawl <- trawl[,c('haulid','region','year','lon','lat',"wtcpue_q_Dem")]
 colnames(trawl) <- c('haulid','region','year','lon','lat',"biomass")
 trawl$biomass <- ifelse(is.na(trawl$biomass),0,trawl$biomass)
 trawl <- subset(trawl,trawl$biomass < 10^100)
-
-# remove lowest and highest 2% of biomass per year and survey
-high <- trawl %>%
-  group_by(region,year)  %>%
-  slice_max(biomass, prop = 0.02) 
-
-low <- trawl %>%
-  group_by(region,year)  %>%
-  slice_min(biomass, prop = 0.02) 
-
-LH_ends <- c(unique(high$haulid),unique(low$haulid))
-
-trawl <- trawl %>% 
-  filter(!(haulid %in% LH_ends)) %>%
-  as.data.frame()
 
 # now get overlap between survey and grid_master
 trawl$uniq <- paste(trawl$lon,trawl$lat,sep="_")
@@ -184,27 +169,27 @@ for (ideg in 1:length(degrees)){
   cell <- subset(cpue_good,cpue_good$one_degrees == degrees[ideg]) # select 1 cell
   year_series <- subset(timeser,timeser$EcReg == cell$ECO_REG[1])  # get the time series info 
   years <- sort(unique(cpue_good$year[cpue_good$ECO_REG ==cell$ECO_REG[1]])) # get all years with data in the region
-
+  
   year_out <- years[which(!(years %in% cell$year))]  # check which years have no data in the cell
   year_in  <- years[which((years %in% cell$year))]  # check which years have data in the cell
   
   if(length(year_out) > 0){
-  for (iYear in 1:length(year_out)){
-  dd <- year_in[which(abs(year_in-year_out[iYear])==min(abs(year_in-year_out[iYear])))][1]
-
-  # calculate biomass difference between reference year and year to fill data for the region 
-  reg  <- subset(cpue_real,cpue_real$ECO_REG == cell$ECO_REG[1]) 
-  reg  <- subset(reg, reg$year %in% c(year_out[iYear], dd))
-  reg  <- reg[reg$one_degrees %in%  names(table(reg$one_degrees))[table(reg$one_degrees) == 2] , ]
-  corfactor <-  mean(reg$biomass[reg$year == year_out[iYear]])/ mean(reg$biomass[reg$year == dd])
-
-  # get, per year, new information and bind to the dataset
-  newdat <- data.frame(one_degrees = degrees[ideg],year = year_out[iYear],
-                       biomass =  cell$biomass[cell$year == dd] * corfactor,
-                       uni = paste(degrees[ideg],year_out[iYear]),
-                       ECO_REG =  cell$ECO_REG[1])
-  cpue_good <- rbind(cpue_good,newdat) 
-  }}}
+    for (iYear in 1:length(year_out)){
+      dd <- year_in[which(abs(year_in-year_out[iYear])==min(abs(year_in-year_out[iYear])))][1]
+      
+      # calculate biomass difference between reference year and year to fill data for the region 
+      reg  <- subset(cpue_real,cpue_real$ECO_REG == cell$ECO_REG[1]) 
+      reg  <- subset(reg, reg$year %in% c(year_out[iYear], dd))
+      reg  <- reg[reg$one_degrees %in%  names(table(reg$one_degrees))[table(reg$one_degrees) == 2] , ]
+      corfactor <-  mean(reg$biomass[reg$year == year_out[iYear]])/ mean(reg$biomass[reg$year == dd])
+      
+      # get, per year, new information and bind to the dataset
+      newdat <- data.frame(one_degrees = degrees[ideg],year = year_out[iYear],
+                           biomass =  cell$biomass[cell$year == dd] * corfactor,
+                           uni = paste(degrees[ideg],year_out[iYear]),
+                           ECO_REG =  cell$ECO_REG[1])
+      cpue_good <- rbind(cpue_good,newdat) 
+    }}}
 
 # data is ready, remove all grid cells that are not part of time series
 cpue_good <- subset(cpue_good,cpue_good$one_degrees %in% degrees)
@@ -229,8 +214,8 @@ C1515 <- readRDS("C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Data a
 
 ### total catch for all demersal groups
 Catch <- rbind(C8084,C8589,C9094,C9599,C0004,C0509,C1014,C1515)
-Catch <- subset(Catch, Catch$Funcgroup %in% c(4,5,6,10:24))
-#Catch <- subset(Catch, Catch$Funcgroup %in% c(6,12,15,18,22,24)) # only large fish
+#Catch <- subset(Catch, Catch$Funcgroup %in% c(4,5,6,10:24))
+Catch <- subset(Catch, Catch$Funcgroup %in% c(6,12,15,18,22,24)) # only large fish
 Catch$Tot <- Catch$Reported + Catch$IUU + Catch$Discards
 Catch <- aggregate(Catch$Tot, by= list(Catch$Cell,Catch$IYear),FUN= sum,na.rm=T)
 colnames(Catch) <- c("Cell","Year","catch")
@@ -280,7 +265,7 @@ for (ideg in 1:length(degrees)){
   cell_all$uni <-paste(cell_all$one_degrees,cell_all$year)
   cell_all <- cbind(cell_all,Fisheries[match(cell_all$uni,Fisheries$uni),c("Catch_sqkm")])
   colnames(cell_all)[ncol(cell_all)] <- "Catch_sqkm" 
-
+  
   nb    <- which(!(is.na(cell_all$biomass))) # run the index to get the correct years for the catch
   nb_gr <- c(nb[-1],nb[length(nb)]) 
   cell_all$idx          <- c(rep(nb,(nb_gr-nb)),NA)
@@ -291,7 +276,7 @@ for (ideg in 1:length(degrees)){
   # sum of catch
   cell <- cbind(cell,cell_all[match(cell$uni,cell_all$uni),c("totCatch")]) 
   colnames(cell)[ncol(cell)] <- "totCatch" 
-
+  
   # estimate surplus production in kg per km2 per year
   cell$prod <- (cell$biomass_plusone - cell$biomass + cell$totCatch)/(cell$year_plusone-cell$year)  
   prod <- rbind(prod,cell[,c('uni','prod')])
@@ -309,119 +294,61 @@ cpue_good$cell_prod    <- cpue_good$prod * cpue_good$ocean_sqkm
 
 cpue_final <- subset(cpue_good,!(is.na(cpue_good$cell_prod)))
 
+# remove lowest and highest 2% of biomass per survey
+high <- cpue_final %>%
+  group_by(ECO_REG,year)  %>%
+  slice_max(biomass, prop = 0.02) 
+
+low <- cpue_final %>%
+  group_by(ECO_REG,year)  %>%
+  slice_min(biomass, prop = 0.02) 
+
+LH_ends <- c(unique(high$uni),unique(low$uni))
+
+cpue_final <- cpue_final %>% 
+  filter(!(uni %in% LH_ends)) %>%
+  as.data.frame()
+
 
 tt <-  aggregate(list(cpue_final$cell_biomass,cpue_final$cell_catch,cpue_final$cell_prod,cpue_final$ocean_sqkm),
-                      by=list(cpue_final$ECO_REG,cpue_final$year),FUN=sum)
+                 by=list(cpue_final$ECO_REG,cpue_final$year),FUN=sum)
 colnames(tt) <- c("ECO_REG","year","biomass","catch","prod","ocean_sqkm")
 
 tt$biomass <- tt$biomass/tt$ocean_sqkm
 tt$catch   <- tt$catch/tt$ocean_sqkm
 tt$prod    <- tt$prod/tt$ocean_sqkm
 
- par(mfrow = c(3, 4))
+par(mfrow = c(3, 4))
 
- trcFunc <- function(x,a,b){((a*x)-(b*x^2))}
+trcFunc <- function(x,a,b){((a*x)-(b*x^2))}
+timeser$Bmsy <- NA
+timeser$bio00_05 <- NA
 
- timeser$bio <- NA
- timeser$prod <- NA
- timeser$catch <- NA
-
- 
- for (j in 1:nrow(timeser)){
-   reg_plot <- subset(tt,tt$ECO_REG == timeser$EcReg[j])
-   plot(reg_plot$ER  ~ reg_plot$year, type="o", main = timeser$EcReg[j],
-        ylim=c(0,0.5))
-   
- }
-   timeser$bio[j] <- mean(reg_plot$biomass)
-   timeser$prod[j] <- mean(reg_plot$prod)
-   timeser$catch[j] <- mean(reg_plot$catch)
- }
-   
-   
-   plot(reg_plot$biomass,reg_plot$prod,pch=16,xlab="Biomass kg/km2", ylab="Surplus prod kg/km2/y",
-        main = timeser$EcReg[j],xlim=c(1,max(reg_plot$biomass)))
-   
-   x <- reg_plot$biomass
-   y <- reg_plot$prod
-   
-   mfit <- nls(y~trcFunc(x,a,b),start=list(a=1,b=0.1))
-   x <- c(1:max(reg_plot$biomass))
-   y <- coef(mfit)[1]*x - coef(mfit)[2]*x^2
-   lines(y~x)
-   timeser$Bmsy[j] <- coef(mfit)[1]/(2*coef(mfit)[2])
-   timeser$bio00_05[j] <- mean(reg_plot$biomass[reg_plot$year %in% c(2000:2005)])
-   
-   #
-   rd <- aggregate(list(reg_plot$catch,reg_plot$prod),by=list(reg_plot$year),FUN= mean)
-   colnames(rd) <- c("Year","Catch","Prod")
-   timeser$prod[j] <- max(rd$Prod)
-   timeser$catch[j] <- max(rd$Catch)
-   }
-
- timeser$state <- timeser$bio00_05/timeser$Bmsy
- 
- ENV <- subset(grid_master@data,grid_master@data$uni %in% degrees)
- ENV <- aggregate(list(ENV$Depth,ENV$SST,ENV$NPP,ENV$chla,ENV$chla_wiffs,ENV$maxchla,ENV$lz_prod,ENV$ben_prod),
-                  by=list(ENV$ECO_REG),FUN= mean ,na.rm=T)
- 
- colnames(ENV) <- c("EcReg","Depth","SST","NPP","chla","chla_wiffs","maxchla","lz_prod","ben_prod")
- 
- timeser <- cbind(timeser,ENV[match(timeser$EcReg,ENV$EcReg),c(2:9)])
- timeser$Depth <- abs(timeser$Depth)
- timeser$region <-  c(1,1,1,1,3,3,1,1,3,3,2,3,1,2,2,2,3,2,3,2,2) #c("a","a","a","a","p","p","a","a","p","p","a","p","a","a","a","a","p","a","p","a","a")
- timeser$ER <- timeser$catch/timeser$bio
-
- # first correct for fishing history
- mod1 <- lm(timeser$tcor~timeser$ER)
- 
- # now correct biomass for respiration costs
- timeser <- data.frame(timeser, resids = residuals(mod1))
- timeser$tcor <- timeser$bio/0.5^((timeser$SST-10)/10)
- param.Q10.^((tempdata(1:param.bottom+1 , (param.region+1))-10)/10);
- 
- summary(lm(residuals(mod1)~timeser$SST * as.factor(timeser$region)))
- 
- plot(timeser$bio~timeser$SST)
- summary(lm(timeser$bio~timeser$SST))
- 
- x= c(1,25)
- y= (67045.6 + -2862.1*x)
- lines(x=x,y=y)
- 
- y2 <- c(67045,67045/2^2)
- lines(x=x,y=y2,col="blue")
- 
- timeser$second <- timeser$lz_prod + timeser$ben_prod
- 
- plot(timeser$second~timeser$SST,ylab="food for fish production",xlab="SST",pch=16,las=1)
- 
- plot(log10(timeser$bio)~timeser$SST,ylab="log10(Biomass)",xlab="SST",las=1)
- points(log10(timeser$bio[timeser$region==1])~timeser$SST[timeser$region==1],col="blue",pch=16)
- points(log10(timeser$bio[timeser$region==2])~timeser$SST[timeser$region==2],col="orange",pch=16)
- points(log10(timeser$bio[timeser$region==3])~timeser$SST[timeser$region==3],col="red",pch=16)
- 
- summary(lm(log10(timeser$bio)~timeser$SST))
- x=c(0,30)
- y1 = 4.9460 + - 0.0491*x
- y2 <- c(4.65,log10(10^4.65/1.9^3))
- lines(x,y1)
- lines(x,y2,lty=3)
- 
- 
- plot(log10(timeser$bio)~timeser$second,ylab="log10(Biomass)",xlab="ER",las=1)
- points(log10(timeser$bio[timeser$region==1])~timeser$ER[timeser$region==1],col="blue",pch=16)
- points(log10(timeser$bio[timeser$region==2])~timeser$ER[timeser$region==2],col="orange",pch=16)
- points(log10(timeser$bio[timeser$region==3])~timeser$ER[timeser$region==3],col="red",pch=16)
- 
-  # first correct for fishing history
- mod1 <- lm(timeser$bio~timeser$ER * as.factor(timeser$region))
- plot(residuals(mod1)~timeser$SST,ylab="(Biomass)_residuals",xlab="SST",las=1)
- points(residuals(mod1)[timeser$region==1]~timeser$SST[timeser$region==1],col="blue",pch=16)
- points(residuals(mod1)[timeser$region==2]~timeser$SST[timeser$region==2],col="orange",pch=16)
- points(residuals(mod1)[timeser$region==3]~timeser$SST[timeser$region==3],col="red",pch=16)
- 
- 
- 
- 
+for (j in 1:nrow(timeser)){
+  reg_plot <- subset(tt,tt$ECO_REG == timeser$EcReg[j])
+  plot(reg_plot$biomass,reg_plot$prod,pch=16,xlab="Biomass kg/km2", ylab="Surplus prod kg/km2/y",
+       main = timeser$EcReg[j],xlim=c(1,max(reg_plot$biomass)))
   
+  x <- reg_plot$biomass
+  y <- reg_plot$prod
+  
+  mfit <- nls(y~trcFunc(x,a,b),start=list(a=1,b=0.1))
+  x <- c(1:max(reg_plot$biomass))
+  y <- coef(mfit)[1]*x - coef(mfit)[2]*x^2
+  lines(y~x)
+  timeser$Bmsy[j] <- coef(mfit)[1]/(2*coef(mfit)[2])
+  timeser$bio00_05[j] <- mean(reg_plot$biomass[reg_plot$year %in% c(2000:2005)])
+}
+
+timeser$state <- timeser$bio00_05/timeser$Bmsy
+
+load("cleaned data/Ecoregion_environment_info.Rdata") ## redo info in C:\Users\danie\Documents\Online for git\FishGrowth\Data
+
+# and C:\Users\danie\Dropbox\Werk\Archief\2018 Nat Eco Evo\Final_analysis_manuscript\Environmental_data_Ecoregions
+
+timeser <- cbind(timeser,dat[match(timeser$EcReg,dat$Name_spalding),c(4,5,7,8,12,14)])
+timeser$region <- c("a","a","a","p","a","p","a","a","p","p","a","p","a","a","a","a","p","a","p","a","a")
+
+NS <- subset(tt,tt$ECO_REG =="North Sea")
+plot(NS$biomass ~ NS$year,type="l")
+

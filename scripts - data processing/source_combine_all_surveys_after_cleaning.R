@@ -81,20 +81,31 @@ adapt <- adapt %>%
 colnames(trawl) <- colnames(adapt)
 trawl <- rbind(trawl,adapt)
 
-# now select "pelagic" fish to plot seperately
+# there are a few stations with INF numbers, remove
+INF_nb <- subset(trawl,trawl$wtcpue_q > 10^100)
+
+trawl <- trawl %>% 
+  filter(!(haulid %in% unique(INF_nb$haulid))) %>%
+  as.data.frame()
+
+############## 
+### get trait information
+##############
+
+# select "pelagic" fish 
 pel_family <- c("Clupeidae" , "Osmeridae",  "Exocoetidae" , "Atherinidae" , "Engraulidae",
                 "Hemiramphidae", "Inermiidae","Belonidae","Scomberesocidae", "Echeneidae",
-                "Carangidae","Bramidae","Scombridae","Centrolophidae","Istiophoridae")
+                "Carangidae","Bramidae","Scombridae","Centrolophidae","Istiophoridae","Ammodytidae")
 
 trawl$type <- ifelse(trawl$family %in% pel_family,"pel","dem")
 
-# now select "large" fish to plot separately
+# select "large" fish species -- Linf > 80 cm 
 traits <- read.csv("traits and species/Beukhofetal_2019/Traits_fish.csv",header=T,sep=";",row.names=NULL)
-
 traits_large <- subset(traits,traits$length.infinity > 80)
-
 large <- unique(traits_large$taxon)
-
 trawl$size <- ifelse(trawl$spp %in% large,"large","small")
 
-rm(pel_family,adapt,norw,noCpue,norw_dat,datras,survey3,gd_new,traits,traits_large,large)
+trawl <- cbind(trawl,traits[match(trawl$spp,traits$taxon),c("tl")])
+colnames(trawl)[ncol(trawl)] <- "tl"
+
+rm(pel_family,adapt,norw,noCpue,norw_dat,datras,survey3,gd_new,traits,traits_large,large,INF_nb)

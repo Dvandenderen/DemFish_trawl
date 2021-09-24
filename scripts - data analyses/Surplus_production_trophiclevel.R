@@ -20,11 +20,13 @@ source("scripts - data processing/source_combine_all_surveys_after_cleaning.R")
 ##############################################
 # get all survey estimates per year on the grid - 
 
+trawl$tlweight <- trawl$tl*trawl$wtcpue_q
+
   # get types,sizes separate
 trawl_sep <- trawl %>% 
   group_by(haulid,region,gear,year,month,lon,lat,type) %>%
-  summarize_at(.vars=c('wtcpue', 'wtcpue_q'), .funs = function(x) sum(x)) %>% 
-  dplyr::select(haulid,region,gear,year,month,lon,lat,type,wtcpue,wtcpue_q) %>%
+  summarize_at(.vars=c('wtcpue', 'wtcpue_q','tlweight'), .funs = function(x) sum(x,na.rm=T)) %>% 
+  dplyr::select(haulid,region,gear,year,month,lon,lat,type,wtcpue,wtcpue_q,tlweight) %>%
   as.data.frame()
 
   # now get all stations and years with data
@@ -36,12 +38,13 @@ trawl <- trawl %>%
 
   # add the type, size, species to estimate surplus production 
 trawl_sep <- subset(trawl_sep,trawl_sep$type =="dem")
-colnames(trawl_sep)[which(colnames(trawl_sep) %in% c("wtcpue","wtcpue_q"))] <- c("wtcpue_Dem","wtcpue_q_Dem")
-trawl <- cbind(trawl,trawl_sep[match(trawl$haulid,trawl_sep$haulid), c("wtcpue_Dem","wtcpue_q_Dem")])
-trawl <- trawl[,c('haulid','region','year','lon','lat',"wtcpue_q_Dem")]
-colnames(trawl) <- c('haulid','region','year','lon','lat',"biomass")
+colnames(trawl_sep)[which(colnames(trawl_sep) %in% c("wtcpue","wtcpue_q","tlweight"))] <- c("wtcpue_Dem","wtcpue_q_Dem","tlw_Dem")
+trawl <- cbind(trawl,trawl_sep[match(trawl$haulid,trawl_sep$haulid), c("wtcpue_Dem","wtcpue_q_Dem","tlw_Dem")])
+trawl <- trawl[,c('haulid','region','year','lon','lat',"wtcpue_q_Dem","tlw_Dem")]
+colnames(trawl) <- c('haulid','region','year','lon','lat',"biomass","tlw")
 trawl$biomass <- ifelse(is.na(trawl$biomass),0,trawl$biomass)
 trawl <- subset(trawl,trawl$biomass < 10^100)
+trawl$tlw <- trawl$tlw/trawl$biomass
 
 # remove lowest and highest 2% of biomass per year and survey
 high <- trawl %>%
@@ -79,7 +82,7 @@ colnames(trawl)[ncol(trawl)] <- "one_degrees"
 
 cpue <- trawl %>%
   group_by(one_degrees,year) %>%
-  summarise_at (c("biomass"),mean, na.rm=T) %>%
+  summarise_at (c("biomass","tlw"),mean, na.rm=T) %>%
   as.data.frame ()
 cpue$uni <- paste(cpue$one_degrees,cpue$year)
 cpue$year <- as.numeric(cpue$year)
@@ -115,6 +118,7 @@ for (ideg in 1:length(degrees_sub)){
   nb <- subset(nb,!(nb %in% c(1,nrow(res))))
   print(nb)
   res$biomass[nb] <- (res$biomass[nb + 1] +  res$biomass[nb - 1]) / 2
+  res$tlw[nb] <- (res$tlw[nb + 1] +  res$tlw[nb - 1]) / 2
   cpue <- subset(cpue,!(cpue$one_degrees == degrees_sub[ideg]))
   cpue <- rbind(cpue,res)
 }
@@ -133,6 +137,7 @@ for (ideg in 1:length(degrees_sub)){
   nb <- subset(nb,!(nb %in% c(1,nrow(res))))
   print(nb)
   res$biomass[nb] <- (res$biomass[nb + 1] +  res$biomass[nb - 1]) / 2
+  res$tlw[nb] <- (res$tlw[nb + 1] +  res$tlw[nb - 1]) / 2
   cpue <- subset(cpue,!(cpue$one_degrees ==  degrees_sub[ideg]))
   cpue <- rbind(cpue,res)
 }
@@ -201,6 +206,7 @@ for (ideg in 1:length(degrees)){
   # get, per year, new information and bind to the dataset
   newdat <- data.frame(one_degrees = degrees[ideg],year = year_out[iYear],
                        biomass =  cell$biomass[cell$year == dd] * corfactor,
+                       tlw  =  cell$tlw [cell$year == dd],
                        uni = paste(degrees[ideg],year_out[iYear]),
                        ECO_REG =  cell$ECO_REG[1])
   cpue_good <- rbind(cpue_good,newdat) 
@@ -306,17 +312,39 @@ colnames(cpue_good)[ncol(cpue_good)] <- "Catch_sqkm"
 cpue_good$cell_biomass <- cpue_good$biomass * cpue_good$ocean_sqkm
 cpue_good$cell_catch   <- cpue_good$Catch_sqkm * cpue_good$ocean_sqkm
 cpue_good$cell_prod    <- cpue_good$prod * cpue_good$ocean_sqkm
+cpue_good$cell_tlw     <- cpue_good$tlw * cpue_good$ocean_sqkm
 
-cpue_final <- subset(cpue_good,!(is.na(cpue_good$cell_prod)))
+cpue_final <- subset(cpue_good,!(is.na(cpue_good$cell_catch)))
 
-
-tt <-  aggregate(list(cpue_final$cell_biomass,cpue_final$cell_catch,cpue_final$cell_prod,cpue_final$ocean_sqkm),
-                      by=list(cpue_final$ECO_REG,cpue_final$year),FUN=sum)
-colnames(tt) <- c("ECO_REG","year","biomass","catch","prod","ocean_sqkm")
+tt <-  aggregate(list(cpue_final$cell_biomass,cpue_final$cell_catch,cpue_final$cell_prod,cpue_final$cell_tlw ,cpue_final$ocean_sqkm),
+                      by=list(cpue_final$ECO_REG,cpue_final$year),FUN=sum,na.rm=T)
+colnames(tt) <- c("ECO_REG","year","biomass","catch","prod","tl","ocean_sqkm")
 
 tt$biomass <- tt$biomass/tt$ocean_sqkm
 tt$catch   <- tt$catch/tt$ocean_sqkm
 tt$prod    <- tt$prod/tt$ocean_sqkm
+tt$tl      <- tt$tl/tt$ocean_sqkm
+
+### fit a model relationship biomass-ER
+library(lme4)
+
+tt$Lbio <- log10(tt$biomass)
+tt$ER <- tt$catch / tt$biomass
+tt$LER <- log10(tt$ER)
+
+
+fish  <- lmer(Lbio ~ ER + (1 | ECO_REG), data = tt)
+
+library(nlme)
+fish2 <- lme(biomass ~ ER, random = ~ 1 | ECO_REG, data=tt)
+fish3 <- lme(biomass ~ LER, random = ~ 1 | ECO_REG, data=tt)
+
+fish4 <- lme(Lbio ~ LER, random = ~ 1 + LER | ECO_REG, data=tt)
+fish5 <- lme(Lbio ~ LER, random = ~ 1 | ECO_REG, data=tt)
+random <- ranef(fish5)
+random2 <- ranef(fish4)
+#####
+
 
  par(mfrow = c(3, 4))
 
@@ -325,42 +353,31 @@ tt$prod    <- tt$prod/tt$ocean_sqkm
  timeser$bio <- NA
  timeser$prod <- NA
  timeser$catch <- NA
-
+ timeser$tl <- NA
+ timeser$biocor <- NA
+ timeser$biocor2 <- NA
  
  for (j in 1:nrow(timeser)){
    reg_plot <- subset(tt,tt$ECO_REG == timeser$EcReg[j])
-   plot(reg_plot$ER  ~ reg_plot$year, type="o", main = timeser$EcReg[j],
-        ylim=c(0,0.5))
+   reg_plot$ER <- reg_plot$catch/reg_plot$biomass
+   plot(reg_plot$biomass  ~ reg_plot$ER,main = timeser$EcReg[j],xlim=c(0,max(reg_plot$ER)))
    
- }
-   timeser$bio[j] <- mean(reg_plot$biomass)
-   timeser$prod[j] <- mean(reg_plot$prod)
-   timeser$catch[j] <- mean(reg_plot$catch)
- }
-   
-   
-   plot(reg_plot$biomass,reg_plot$prod,pch=16,xlab="Biomass kg/km2", ylab="Surplus prod kg/km2/y",
-        main = timeser$EcReg[j],xlim=c(1,max(reg_plot$biomass)))
-   
-   x <- reg_plot$biomass
-   y <- reg_plot$prod
-   
-   mfit <- nls(y~trcFunc(x,a,b),start=list(a=1,b=0.1))
-   x <- c(1:max(reg_plot$biomass))
-   y <- coef(mfit)[1]*x - coef(mfit)[2]*x^2
+   x <- seq(0.001,0.5,length.out =500)
+   y = 10^(3.7275267 - 0.4117613 *log10(x) + random$`(Intercept)`[which(rownames(random)==timeser$EcReg[j])])    
+   y2 <- 10^(3.7388992 - 0.3966991 *log10(x)+ random2$`(Intercept)`[which(rownames(random2)==timeser$EcReg[j])]+
+                random2$LER[which(rownames(random2)==timeser$EcReg[j])] *log10(x))
    lines(y~x)
-   timeser$Bmsy[j] <- coef(mfit)[1]/(2*coef(mfit)[2])
-   timeser$bio00_05[j] <- mean(reg_plot$biomass[reg_plot$year %in% c(2000:2005)])
-   
-   #
-   rd <- aggregate(list(reg_plot$catch,reg_plot$prod),by=list(reg_plot$year),FUN= mean)
-   colnames(rd) <- c("Year","Catch","Prod")
-   timeser$prod[j] <- max(rd$Prod)
-   timeser$catch[j] <- max(rd$Catch)
-   }
-
- timeser$state <- timeser$bio00_05/timeser$Bmsy
+   lines(y2~x,col="red")
+   timeser$biocor[j] <- 10^(3.7388992 - 0.3966991 *log10(0.02)+ random2$`(Intercept)`[which(rownames(random2)==timeser$EcReg[j])]+
+                           random2$LER[which(rownames(random2)==timeser$EcReg[j])] *log10(0.02))
+   timeser$biocor2[j] <-10^(3.7275267 - 0.4117613 *log10(0.02) + random$`(Intercept)`[which(rownames(random)==timeser$EcReg[j])])    
+   timeser$bio[j] <- mean(reg_plot$biomass)
+   timeser$prod[j] <- mean(reg_plot$prod,na.rm=T)
+   timeser$catch[j] <- mean(reg_plot$catch)
+   timeser$tl[j] <- mean(reg_plot$tl)
+ }
  
+ par(mfrow= c(1,1))  
  ENV <- subset(grid_master@data,grid_master@data$uni %in% degrees)
  ENV <- aggregate(list(ENV$Depth,ENV$SST,ENV$NPP,ENV$chla,ENV$chla_wiffs,ENV$maxchla,ENV$lz_prod,ENV$ben_prod),
                   by=list(ENV$ECO_REG),FUN= mean ,na.rm=T)
@@ -369,11 +386,22 @@ tt$prod    <- tt$prod/tt$ocean_sqkm
  
  timeser <- cbind(timeser,ENV[match(timeser$EcReg,ENV$EcReg),c(2:9)])
  timeser$Depth <- abs(timeser$Depth)
- timeser$region <-  c(1,1,1,1,3,3,1,1,3,3,2,3,1,2,2,2,3,2,3,2,2) #c("a","a","a","a","p","p","a","a","p","p","a","p","a","a","a","a","p","a","p","a","a")
+ timeser$region <-  c(1,1,1,3,1,3,1,1,3,3,2,3,1,2,2,2,3,2,3,2,2) #c("a","a","a","a","p","p","a","a","p","p","a","p","a","a","a","a","p","a","p","a","a")
  timeser$ER <- timeser$catch/timeser$bio
 
+ #setwd("C:/Users/danie/Desktop")
+ #save(timeser,file = "dataRegions.Rdata")
+ 
  # first correct for fishing history
- mod1 <- lm(timeser$tcor~timeser$ER)
+ dr <- timeser
+ mod1 <- lm(dr$bio~dr$SST + dr$tl + log10(dr$ER))
+ summary(mod1)
+ 
+ mod1 <- lm(dr$bio~dr$SST  + log10(dr$ER))
+ plot(residuals(mod1)~dr$tl,xlab="bioW trophic level",ylab="Residual biomass",pch=16)
+ 
+ mod1 <- lm(dr$bio~dr$SST  + dr$tl)
+ plot(residuals(mod1)~log10(dr$ER), xlab="log10(ER)",ylab="Residual biomass",pch=16)
  
  # now correct biomass for respiration costs
  timeser <- data.frame(timeser, resids = residuals(mod1))
@@ -382,7 +410,7 @@ tt$prod    <- tt$prod/tt$ocean_sqkm
  
  summary(lm(residuals(mod1)~timeser$SST * as.factor(timeser$region)))
  
- plot(timeser$bio~timeser$SST)
+ plot(residuals(mod1)~log10(timeser$ER))
  summary(lm(timeser$bio~timeser$SST))
  
  x= c(1,25)
@@ -421,7 +449,12 @@ tt$prod    <- tt$prod/tt$ocean_sqkm
  points(residuals(mod1)[timeser$region==2]~timeser$SST[timeser$region==2],col="orange",pch=16)
  points(residuals(mod1)[timeser$region==3]~timeser$SST[timeser$region==3],col="red",pch=16)
  
- 
- 
+ library(ggplot2)
+ library(jtools)
+
+ timeser$bio_log <- log10(timeser$bio)
+ mod1 <- lm(biozero~ SST + tl , data=timeser)
+ summary(mod1)
+ effect_plot(mod1, tl, interval = TRUE, plot.points = TRUE)
  
   

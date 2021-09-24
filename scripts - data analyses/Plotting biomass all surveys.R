@@ -12,7 +12,7 @@ trawl_backup <- trawl
 # trawl <- trawl_backup
 
 # select years from 2000
-  trawl <- subset(trawl, trawl$year > 2000)
+  trawl <- subset(trawl, trawl$year > 2000 & trawl$year <= 2010)
 
 # get pel and dem separate 
   trawl_sep <- trawl %>% 
@@ -131,7 +131,7 @@ trawl_backup <- trawl
   color_pallet_function <- colorRampPalette(colors = sealand)
   
   figmap <- ggplot(nco) + 
-    geom_sf( aes(fill=pel_plot), colour = NA ) + 
+    geom_sf( aes(fill=dem_plot), colour = NA ) + 
     scale_fill_gradientn(colours=color_pallet_function(30),name="Tonnes / km2") +
     geom_sf(data = ctrys, fill="dark grey",colour=NA) 
   

@@ -52,16 +52,17 @@ coords$one_degrees <- tr$uni
 grid_master <- subset(bargrid,bargrid@data$uni %in% tr$uni)
 grid_master <- grid_master[,-1]
 grid_master$area_sqkm <- area(grid_master)/10^6
-grid_master$land_sqkm <- 0
 
 # get fraction per grid cell on land
 land <- rnaturalearth::ne_countries(scale = 10, returnclass = "sf")
 sf_grid_master <- st_as_sf(grid_master)
-tt <- sf::st_intersects(sf_grid_master, land)
-tt2 <- sf::st_area(sf::st_intersection(sf_grid_master, land))
-land_over <- data.frame(as.data.frame(tt),tt2)
-land_over <- aggregate(land_over$tt2,by=list(land_over$row.id),sum)
-grid_master$land_sqkm[land_over$Group.1] <- land_over$x/10^6 # m2 to km2
+tt2 <- sf::st_intersection(sf_grid_master, land) 
+land_over <- data.frame(uni = tt2$uni, land_sqkm = st_area(tt2)) 
+land_over$land_sqkm <- land_over$land_sqkm / 10^6 # m2 to km2
+land_over$land_sqkm <- unclass(land_over$land_sqkm)
+grid_master <- cbind(grid_master,land_over[match(grid_master@data$uni,land_over$uni), c(2)])
+colnames(grid_master@data)[ncol(grid_master@data)] <- "land_sqkm"
+grid_master$land_sqkm <- ifelse(is.na(grid_master$land_sqkm), 0,grid_master$land_sqkm)
 
 # get ocean area
 grid_master$ocean_sqkm <- grid_master$area_sqkm - grid_master$land_sqkm
@@ -84,6 +85,88 @@ grid_master <- subset(grid_master,!(grid_master@data$ECO_REG %in% c("Faroe Plate
                                                                     "Puget Trough/Georgia Basin",
                                                                     "Southern Grand Banks - South Newfoundland","Greater Antilles")))
 shape <- subset(shape,shape@data$ECOREGION %in% grid_master$ECO_REG)
+
+save(grid_master,file="cleaned data/surveyed_grid.RData")
+
+# now load Env conditions and link to surveyed grid
+lon <- seq(from = -180+1/12,to = 180-1/12,length.out = 2160)
+lat <- seq(from = 90-1/12,to = -90+1/12,length.out = 1080)
+
+# get all coords 
+coords <- merge(lon,lat)
+coords <- subset(coords,coords$x < 55)
+coords <- subset(coords,coords$y > 20)
+
+coord <-data.frame(Longitude = coords[,1], Latitude = coords[,2])
+coordinates(coord)<- ~ Longitude + Latitude  
+crs(coord) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+tr <- over(coord,grid_master)
+coords <- cbind(coords,tr)
+coords <- subset(coords,!(is.na(coords$uni)))
+
+# load environmental conditions
+load(paste(getwd(),"_noGIT/Environmental data/SST/sst_average_2005_2010.RData",sep=""))
+load(paste(getwd(),"_noGIT/Environmental data/NPP/NPP_Cafe_average_2005_2010.RData",sep=""))
+load(paste(getwd(),"_noGIT/Environmental data/ChlA_modis/chl_average_2005_2010.RData",sep=""))
+load(paste(getwd(),"_noGIT/Environmental data/ChlA_seawiffs/chlo-seawifs.RData",sep=""))
+load(paste(getwd(),"_noGIT/Environmental data/Depth/ETOPO_1over6-grid_depth.RData",sep=""))
+
+Depth_output[[3]][Depth_output[[3]] >0] <- NA
+chlA_output[[3]][chlA_output[[3]] == 0] <- NA
+chlA_output[[5]][chlA_output[[5]] == 0] <- NA
+NPP_output[[3]][NPP_output[[3]] == 0]   <- NA
+chl_output[[3]][chl_output[[3]] == 0]   <- NA
+
+coords$Depth <- NA
+coords$NPP <- NA
+coords$SST <- NA
+coords$chla <- NA
+coords$chla_wiffs <- NA
+coords$maxchla <- NA
+
+for(j in 1:nrow(coords)){
+  idx_lon <-  which(coords[j,1] == lon)
+  idx_lat <-  which(coords[j,2] == lat)
+  coords$Depth[j] <- Depth_output[[3]][idx_lat,idx_lon]
+  coords$NPP[j]   <- NPP_output[[3]][idx_lat,idx_lon]
+  coords$SST[j]   <- sst_output[[3]][idx_lat,idx_lon]
+  coords$chla[j] <- chl_output[[3]][idx_lat,idx_lon]
+  coords$chla_wiffs[j] <- chlA_output[[3]][idx_lat,idx_lon]
+  coords$maxchla[j] <- chlA_output[[5]][idx_lat,idx_lon]
+  
+}
+
+tnew <- aggregate(list(coords$Depth,coords$SST,coords$NPP,coords$chla,coords$chla_wiffs,coords$maxchla),by=list(coords$uni), FUN= mean,na.rm=T)
+colnames(tnew) <- c("uni","Depth","SST","NPP","chla","chla_wiffs","maxchla")
+
+grid_master <- cbind(grid_master,tnew[match(grid_master@data$uni,tnew$uni), c(2:7)])
+
+cobalt <- read.csv(paste(getwd(),"_noGIT/Environmental data/Cobalt/Cobalt_output.csv",sep=""),sep=",")
+cobalt$long <- ifelse(cobalt$long >180, cobalt$long - 360, cobalt$long)
+lonlat <- coordinates(grid_master)
+lonlat <- as.data.frame(lonlat)
+colnames(lonlat) <- c("xlong", "ylat")
+lonlat$uni <- paste(lonlat$xlong,lonlat$ylat)
+
+lats <- unique(cobalt$lat)
+
+grid_master$lz_prod <- NA
+grid_master$mz_prod <- NA
+grid_master$ben_prod <- NA
+grid_master$lz_bio <- NA
+grid_master$mz_bio <- NA
+
+for(j in 1:nrow(grid_master@data)){
+  idx_lat <- which(abs(lats-lonlat[j,2])==min(abs(lats-lonlat[j,2])))
+  idx_row <- which(cobalt$long == lonlat[j,1] & cobalt$lat == lats[idx_lat])
+
+  if (length(idx_row) >0){
+    grid_master$lz_prod[j] <- cobalt$lz_prod[idx_row]
+    grid_master$mz_prod[j]   <- cobalt$mz_prod[idx_row]
+    grid_master$ben_prod[j]   <- cobalt$ben_prod[idx_row]
+    grid_master$lz_bio[j] <- cobalt$lz_bio[idx_row]
+    grid_master$mz_bio[j] <- cobalt$mz_bio[idx_row]
+}}
 
 save(grid_master,file="cleaned data/surveyed_grid.RData")
 
