@@ -23,6 +23,7 @@ Catch <- aggregate(Catch$Tot, by= list(Catch$Cell,Catch$IYear,Catch$group),FUN= 
 colnames(Catch) <- c("Cell","Year","Group","catch")
 Catch$uni <- paste(Catch$Cell,Catch$Year)
 
+load("C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Data analysis/Cells_in_EcoReg.RData")
 Catch <- subset(Catch, Catch$Cell %in% subcells$Cell)
 Catch <- cbind(Catch, subcells[match(Catch$Cell,subcells$Cell), c(4:6)]) 
 Catch <- as.data.frame(Catch)
@@ -50,7 +51,6 @@ ttfin <- cbind(ttfin, ttot[match(ttfin$Group.1,ttot$Group.1), c(3)])
 ttfin <- ttfin[,-2]
 colnames(ttfin) <- c("Region","Dem","Pel","other")
 ttfin$tot <- ttfin$Dem + ttfin$Pel + ttfin$other
-ttfi
 
 plot(log10(ttfin$Dem)~log10(ttfin$tot))
 

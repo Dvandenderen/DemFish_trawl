@@ -2,6 +2,8 @@
 # get NEFSC group-specific gear values
 
 library(ecodata)
+library(dplyr)
+library(stringr)
 
 nefsc <- read.csv("data/NEFSC_gear_q/NEFSC_Survey_Species_q.csv",header=T,sep=",")
 
@@ -34,8 +36,8 @@ nefsc_GRP <- nefsc_spec %>%
 
 # get walker et al group-specific length-based values
 geareff <- read.csv(file = "data/Walkeretal_2017_supp/EfficiencyTab.csv",sep=",",header = T)
-geareff <- subset(geareff,!(geareff$Code %in% c("GRP1","GRP2","GRP3","GRP4","GRP5","GRP6","GRP7")))
-geareff <- subset(geareff,!(geareff$Gear %in% c("GOV")))
+geareff <- subset(geareff,(geareff$Code %in% c("GRP1","GRP2","GRP3","GRP4","GRP5","GRP6","GRP7")))
+geareff <- subset(geareff,(geareff$Gear %in% c("GOV")))
 
 walk_avg <- aggregate(geareff$Efficiency,by=list(geareff$Group),FUN = mean,na.rm=T)
 
@@ -45,6 +47,6 @@ colnames(effi) <- c("group","Walker","NEFSC")
 plot(effi$Walker,effi$NEFSC,xlim=c(0,0.5),ylim=c(0,0.5),col="white",xlab="Walker - lenght-based average q",ylab="NEFSC - q")
 text(effi$Walker,effi$NEFSC,effi$group)
 
-
-
+tr<- effi[-5,]
+cor(tr$Walker,tr$NEFSC)
 
