@@ -22,25 +22,14 @@ source("scripts - data processing/source_combine_all_surveys_after_cleaning.R")
 
 trawl$tlweight <- trawl$tl*trawl$wtcpue_q
 
-  # get types,sizes separate
-trawl_sep <- trawl %>% 
-  group_by(haulid,region,gear,year,month,lon,lat,type) %>%
-  summarize_at(.vars=c('wtcpue', 'wtcpue_q','tlweight'), .funs = function(x) sum(x,na.rm=T)) %>% 
-  dplyr::select(haulid,region,gear,year,month,lon,lat,type,wtcpue,wtcpue_q,tlweight) %>%
-  as.data.frame()
-
   # now get all stations and years with data
 trawl <- trawl %>% 
   group_by(haulid,region,gear,year,month,lon,lat,depth) %>%
-  summarize_at(.vars=c('wtcpue', 'wtcpue_q'), .funs = function(x) sum(x)) %>% 
-  dplyr::select(haulid,region,gear,year,month,lon,lat,depth,wtcpue,wtcpue_q) %>%
+  summarize_at(.vars=c('wtcpue', 'wtcpue_q','tlweight'), .funs = function(x) sum(x)) %>% 
+  dplyr::select(haulid,region,gear,year,month,lon,lat,depth,wtcpue,wtcpue_q,tlweight) %>%
   as.data.frame()
 
-  # add the type, size, species to estimate surplus production 
-trawl_sep <- subset(trawl_sep,trawl_sep$type =="dem")
-colnames(trawl_sep)[which(colnames(trawl_sep) %in% c("wtcpue","wtcpue_q","tlweight"))] <- c("wtcpue_Dem","wtcpue_q_Dem","tlw_Dem")
-trawl <- cbind(trawl,trawl_sep[match(trawl$haulid,trawl_sep$haulid), c("wtcpue_Dem","wtcpue_q_Dem","tlw_Dem")])
-trawl <- trawl[,c('haulid','region','year','lon','lat',"wtcpue_q_Dem","tlw_Dem")]
+trawl <- trawl[,c('haulid','region','year','lon','lat',"wtcpue_q","tlweight")]
 colnames(trawl) <- c('haulid','region','year','lon','lat',"biomass","tlw")
 trawl$biomass <- ifelse(is.na(trawl$biomass),0,trawl$biomass)
 trawl <- subset(trawl,trawl$biomass < 10^100)
@@ -233,21 +222,14 @@ C0509 <- readRDS("C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Data a
 C1014 <- readRDS("C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Data analysis/Catch_all_2010_2014.rds")
 C1515 <- readRDS("C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Data analysis/Catch_all_2015_2015.rds")
 
-### total catch for all demersal and pelagic groups
+### total catch for all groups
 Catch <- rbind(C8084,C8589,C9094,C9599,C0004,C0509,C1014,C1515)
-Catchdem <- subset(Catch, Catch$Funcgroup %in% c(4,5,6,10:24))
-Catchpel <- subset(Catch, Catch$Funcgroup %in% c(1:3))
+Catch <- subset(Catch, Catch$Funcgroup %in% c(1,2,3,4,5,6,10:24))
 #Catch <- subset(Catch, Catch$Funcgroup %in% c(6,12,15,18,22,24)) # only large fish
-Catchdem$Tot <- Catchdem$Reported + Catchdem$IUU + Catchdem$Discards
-Catchpel$Tot <- Catchpel$Reported + Catchpel$IUU + Catchpel$Discards
-Catch <- aggregate(Catchdem$Tot, by= list(Catchdem$Cell,Catchdem$IYear),FUN= sum,na.rm=T)
+Catch$Tot <- Catch$Reported + Catch$IUU + Catch$Discards
+Catch <- aggregate(Catch$Tot, by= list(Catch$Cell,Catch$IYear),FUN= sum,na.rm=T)
 colnames(Catch) <- c("Cell","Year","catch")
 Catch$uni <- paste(Catch$Cell,Catch$Year)
-Catchpel <- aggregate(Catchpel$Tot, by= list(Catchpel$Cell,Catchpel$IYear),FUN= sum,na.rm=T)
-colnames(Catchpel) <- c("Cell","Year","catch")
-Catchpel$uni <- paste(Catchpel$Cell,Catchpel$Year)
-Catch <- cbind(Catch,Catchpel[match(Catch$uni,Catchpel$uni),c("catch")])
-colnames(Catch)[ncol(Catch)] <- "catch_pel"
 
 ### load Watson cells
 cells <- read.csv(file="C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Data analysis/World_watson.csv",sep=";",header=T)
@@ -264,18 +246,15 @@ cells <- subset(cells,!(is.na(cells$one_degrees)))
 cells2 <- as.data.frame(lapply(cells, rep, length(min(Catch$Year):max(Catch$Year))))
 cells <- data.frame(cells2,Year = rep(min(Catch$Year):max(Catch$Year),each=nrow(cells)))
 cells$uni <- paste(cells$Cell,cells$Year)
-cells <- cbind(cells, Catch[match(cells$uni,Catch$uni), c("catch","catch_pel")])                    
-#colnames(cells)[ncol(cells)] <- "catch"
+cells <- cbind(cells, Catch[match(cells$uni,Catch$uni), c("catch")])                    
+colnames(cells)[ncol(cells)] <- "catch"
 cells$catch[is.na(cells$catch)] <- 0
-cells$catch_pel[is.na(cells$catch_pel)] <- 0
 
 # now get the sum in each grid_master cell
-Fisheries <- aggregate(list(cells$catch,cells$catch_pel,cells$OceanAreasqkm), by= list(cells$one_degrees,cells$Year),FUN= sum)
-colnames(Fisheries) <-  c("one_degrees","Year","Catch","Catch_pel","Area_catch")
+Fisheries <- aggregate(list(cells$catch,cells$OceanAreasqkm), by= list(cells$one_degrees,cells$Year),FUN= sum)
+colnames(Fisheries) <-  c("one_degrees","Year","Catch","Area_catch")
 Fisheries$Catch <- Fisheries$Catch *1000  # tonnes per cell per year ---> kg per cell per year
 Fisheries$Catch_sqkm <- Fisheries$Catch/Fisheries$Area_catch # kg per cell per year ---> kg per km2 per year
-Fisheries$Catch_pel <- Fisheries$Catch_pel *1000  # tonnes per cell per year ---> kg per cell per year
-Fisheries$Catch_pel_sqkm <- Fisheries$Catch_pel/Fisheries$Area_catch # kg per cell per year ---> kg per km2 per year
 Fisheries$uni <- paste(Fisheries$one_degrees,Fisheries$Year)
 
 #########
@@ -316,25 +295,22 @@ for (ideg in 1:length(degrees)){
 cpue_good <- cbind(cpue_good,prod[match(cpue_good$uni,prod[,1]),c(2)])
 colnames(cpue_good)[ncol(cpue_good)] <- "prod"
 
-cpue_good <- cbind(cpue_good,Fisheries[match(cpue_good$uni,Fisheries$uni),c("Catch_sqkm","Catch_pel_sqkm")])
-#colnames(cpue_good)[ncol(cpue_good)] <- "Catch_sqkm" 
+cpue_good <- cbind(cpue_good,Fisheries[match(cpue_good$uni,Fisheries$uni),c("Catch_sqkm")])
+colnames(cpue_good)[ncol(cpue_good)] <- "Catch_sqkm" 
 
 cpue_good$cell_biomass <- cpue_good$biomass * cpue_good$ocean_sqkm
 cpue_good$cell_catch   <- cpue_good$Catch_sqkm * cpue_good$ocean_sqkm
-cpue_good$cell_catch_pell   <- cpue_good$Catch_pel_sqkm * cpue_good$ocean_sqkm
 cpue_good$cell_prod    <- cpue_good$prod * cpue_good$ocean_sqkm
 cpue_good$cell_tlw     <- cpue_good$tlw * cpue_good$ocean_sqkm
 
 cpue_final <- subset(cpue_good,!(is.na(cpue_good$cell_catch)))
 
-tt <-  aggregate(list(cpue_final$cell_biomass,cpue_final$cell_catch,cpue_final$cell_catch_pell,
-                      cpue_final$cell_prod,cpue_final$cell_tlw ,cpue_final$ocean_sqkm),
+tt <-  aggregate(list(cpue_final$cell_biomass,cpue_final$cell_catch,cpue_final$cell_prod,cpue_final$cell_tlw ,cpue_final$ocean_sqkm),
                       by=list(cpue_final$ECO_REG,cpue_final$year),FUN=sum,na.rm=T)
-colnames(tt) <- c("ECO_REG","year","biomass","catch","catch_pel","prod","tl","ocean_sqkm")
+colnames(tt) <- c("ECO_REG","year","biomass","catch","prod","tl","ocean_sqkm")
 
 tt$biomass <- tt$biomass/tt$ocean_sqkm
 tt$catch   <- tt$catch/tt$ocean_sqkm
-tt$catch_pel   <- tt$catch_pel/tt$ocean_sqkm
 tt$prod    <- tt$prod/tt$ocean_sqkm
 tt$tl      <- tt$tl/tt$ocean_sqkm
 
@@ -366,7 +342,6 @@ random2 <- ranef(fish4)
  timeser$bio <- NA
  timeser$prod <- NA
  timeser$catch <- NA
- timeser$catch_pel <- NA
  timeser$tl <- NA
  timeser$biocor <- NA
  timeser$biocor2 <- NA
@@ -376,19 +351,18 @@ random2 <- ranef(fish4)
    reg_plot$ER <- reg_plot$catch/reg_plot$biomass
    plot(reg_plot$biomass  ~ reg_plot$ER,main = timeser$EcReg[j],xlim=c(0,max(reg_plot$ER)))
    
-   #x <- seq(0.001,0.5,length.out =500)
-   #y = 10^(3.7275267 - 0.4117613 *log10(x) + random$`(Intercept)`[which(rownames(random)==timeser$EcReg[j])])    
-   #y2 <- 10^(3.7388992 - 0.3966991 *log10(x)+ random2$`(Intercept)`[which(rownames(random2)==timeser$EcReg[j])]+
-   #              random2$LER[which(rownames(random2)==timeser$EcReg[j])] *log10(x))
-   #lines(y~x)
-   #lines(y2~x,col="red")
-   #timeser$biocor[j] <- 10^(3.7388992 - 0.3966991 *log10(0.02)+ random2$`(Intercept)`[which(rownames(random2)==timeser$EcReg[j])]+
-   #                        random2$LER[which(rownames(random2)==timeser$EcReg[j])] *log10(0.02))
-   #timeser$biocor2[j] <-10^(3.7275267 - 0.4117613 *log10(0.02) + random$`(Intercept)`[which(rownames(random)==timeser$EcReg[j])])    
+   x <- seq(0.001,0.5,length.out =500)
+   y = 10^(3.7275267 - 0.4117613 *log10(x) + random$`(Intercept)`[which(rownames(random)==timeser$EcReg[j])])    
+   y2 <- 10^(3.7388992 - 0.3966991 *log10(x)+ random2$`(Intercept)`[which(rownames(random2)==timeser$EcReg[j])]+
+                random2$LER[which(rownames(random2)==timeser$EcReg[j])] *log10(x))
+   lines(y~x)
+   lines(y2~x,col="red")
+   timeser$biocor[j] <- 10^(3.7388992 - 0.3966991 *log10(0.02)+ random2$`(Intercept)`[which(rownames(random2)==timeser$EcReg[j])]+
+                           random2$LER[which(rownames(random2)==timeser$EcReg[j])] *log10(0.02))
+   timeser$biocor2[j] <-10^(3.7275267 - 0.4117613 *log10(0.02) + random$`(Intercept)`[which(rownames(random)==timeser$EcReg[j])])    
    timeser$bio[j] <- mean(reg_plot$biomass)
    timeser$prod[j] <- mean(reg_plot$prod,na.rm=T)
    timeser$catch[j] <- mean(reg_plot$catch)
-   timeser$catch_pel[j] <- mean(reg_plot$catch_pel)
    timeser$tl[j] <- mean(reg_plot$tl)
  }
  
@@ -404,72 +378,8 @@ random2 <- ranef(fish4)
  timeser$region <-  c(1,1,1,3,1,3,1,1,3,3,2,3,1,2,2,2,3,2,3,2,2) #c("a","a","a","a","p","p","a","a","p","p","a","p","a","a","a","a","p","a","p","a","a")
  timeser$ER <- timeser$catch/timeser$bio
 
+ peldem <- timeser[,c(1,4,6,7,19)]
  #setwd("C:/Users/danie/Desktop")
- #save(timeser,file = "dataRegions.Rdata")
- 
- # first correct for fishing history
- dr <- timeser
- mod1 <- lm(dr$bio~dr$SST + dr$tl + log10(dr$ER))
- summary(mod1)
- 
- mod1 <- lm(dr$bio~dr$SST  + log10(dr$ER))
- plot(residuals(mod1)~dr$tl,xlab="bioW trophic level",ylab="Residual biomass",pch=16)
- 
- mod1 <- lm(dr$bio~dr$SST  + dr$tl)
- plot(residuals(mod1)~log10(dr$ER), xlab="log10(ER)",ylab="Residual biomass",pch=16)
- 
- # now correct biomass for respiration costs
- timeser <- data.frame(timeser, resids = residuals(mod1))
- timeser$tcor <- timeser$bio/0.5^((timeser$SST-10)/10)
- param.Q10.^((tempdata(1:param.bottom+1 , (param.region+1))-10)/10);
- 
- summary(lm(residuals(mod1)~timeser$SST * as.factor(timeser$region)))
- 
- plot(residuals(mod1)~log10(timeser$ER))
- summary(lm(timeser$bio~timeser$SST))
- 
- x= c(1,25)
- y= (67045.6 + -2862.1*x)
- lines(x=x,y=y)
- 
- y2 <- c(67045,67045/2^2)
- lines(x=x,y=y2,col="blue")
- 
- timeser$second <- timeser$lz_prod + timeser$ben_prod
- 
- plot(timeser$second~timeser$SST,ylab="food for fish production",xlab="SST",pch=16,las=1)
- 
- plot(log10(timeser$bio)~timeser$SST,ylab="log10(Biomass)",xlab="SST",las=1)
- points(log10(timeser$bio[timeser$region==1])~timeser$SST[timeser$region==1],col="blue",pch=16)
- points(log10(timeser$bio[timeser$region==2])~timeser$SST[timeser$region==2],col="orange",pch=16)
- points(log10(timeser$bio[timeser$region==3])~timeser$SST[timeser$region==3],col="red",pch=16)
- 
- summary(lm(log10(timeser$bio)~timeser$SST))
- x=c(0,30)
- y1 = 4.9460 + - 0.0491*x
- y2 <- c(4.65,log10(10^4.65/1.9^3))
- lines(x,y1)
- lines(x,y2,lty=3)
+ #save(peldem,file = "dataRegions_peldem.Rdata")
  
  
- plot(log10(timeser$bio)~timeser$second,ylab="log10(Biomass)",xlab="ER",las=1)
- points(log10(timeser$bio[timeser$region==1])~timeser$ER[timeser$region==1],col="blue",pch=16)
- points(log10(timeser$bio[timeser$region==2])~timeser$ER[timeser$region==2],col="orange",pch=16)
- points(log10(timeser$bio[timeser$region==3])~timeser$ER[timeser$region==3],col="red",pch=16)
- 
-  # first correct for fishing history
- mod1 <- lm(timeser$bio~timeser$ER * as.factor(timeser$region))
- plot(residuals(mod1)~timeser$SST,ylab="(Biomass)_residuals",xlab="SST",las=1)
- points(residuals(mod1)[timeser$region==1]~timeser$SST[timeser$region==1],col="blue",pch=16)
- points(residuals(mod1)[timeser$region==2]~timeser$SST[timeser$region==2],col="orange",pch=16)
- points(residuals(mod1)[timeser$region==3]~timeser$SST[timeser$region==3],col="red",pch=16)
- 
- library(ggplot2)
- library(jtools)
-
- timeser$bio_log <- log10(timeser$bio)
- mod1 <- lm(biozero~ SST + tl , data=timeser)
- summary(mod1)
- effect_plot(mod1, tl, interval = TRUE, plot.points = TRUE)
- 
-  

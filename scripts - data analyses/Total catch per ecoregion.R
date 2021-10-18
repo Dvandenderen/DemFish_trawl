@@ -17,7 +17,8 @@ C1515 <- readRDS("C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Data a
 Catch <- rbind(C8084,C8589,C9094,C9599,C0004,C0509,C1014,C1515)
 Catch$group <- "other"
 Catch$group <- ifelse(Catch$Funcgroup %in% c(4,5,6,10:24), "Dem",Catch$group)
-Catch$group <- ifelse(Catch$Funcgroup %in% c(1:3), "Pel",Catch$group)
+Catch$group <- ifelse(Catch$Funcgroup %in% c(1:2), "Pel",Catch$group)
+Catch$group <- ifelse(Catch$Funcgroup %in% c(3), "LPel",Catch$group)
 Catch$Tot <- Catch$Reported + Catch$IUU + Catch$Discards
 Catch <- aggregate(Catch$Tot, by= list(Catch$Cell,Catch$IYear,Catch$group),FUN= sum,na.rm=T)
 colnames(Catch) <- c("Cell","Year","Group","catch")
@@ -44,16 +45,20 @@ tt <- aggregate(tt$catch, by=list(tt$Region,tt$Group),FUN= mean)
 
 ttfin <- subset(tt,tt$Group.2 =="Dem")
 ttpel <- subset(tt,tt$Group.2 =="Pel")
+ttLpel <- subset(tt,tt$Group.2 =="LPel")
 ttot <- subset(tt,tt$Group.2 =="other")
 
-ttfin <- cbind(ttfin, ttpel[match(ttfin$Group.1,ttpel$Group.1), c(3)])   
+ttfin <- cbind(ttfin, ttpel[match(ttfin$Group.1,ttpel$Group.1), c(3)]) 
+ttfin <- cbind(ttfin, ttLpel[match(ttfin$Group.1,ttLpel$Group.1), c(3)])   
 ttfin <- cbind(ttfin, ttot[match(ttfin$Group.1,ttot$Group.1), c(3)])   
 ttfin <- ttfin[,-2]
-colnames(ttfin) <- c("Region","Dem","Pel","other")
-ttfin$tot <- ttfin$Dem + ttfin$Pel + ttfin$other
-
-plot(log10(ttfin$Dem)~log10(ttfin$tot))
+colnames(ttfin) <- c("Region","Dem","Pel","LPel","other")
+ttfin$tot <- ttfin$Dem + ttfin$Pel + ttfin$other + ttfin$LPel
 
 load("C:/Users/danie/Desktop/dataRegions.Rdata")
+load("C:/Users/danie/Desktop/dataRegions_peldem.Rdata")
+colnames(peldem) <- c("EcReg","bio_pd","catch_pd","tl_pd","ER_pd")
+
 ttfin <- cbind(ttfin, timeser[match(ttfin$Region,timeser$EcReg), c(4:19)])   
 
+ttfin <- cbind(ttfin, peldem[match(ttfin$Region,peldem$EcReg), c(2:5)]) 
