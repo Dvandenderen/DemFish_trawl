@@ -108,4 +108,13 @@ trawl$size <- ifelse(trawl$spp %in% large,"large","small")
 trawl <- cbind(trawl,traits[match(trawl$spp,traits$taxon),c("tl")])
 colnames(trawl)[ncol(trawl)] <- "tl"
 
-rm(pel_family,adapt,norw,noCpue,norw_dat,datras,survey3,gd_new,traits,traits_large,large,INF_nb)
+###############
+#### add depths for the hauls with no information using ETOPO ICE depth information
+###############
+load("cleaned data/Depth_hauls_NA.RData")
+trawl <- cbind(trawl,depth_haul[match(trawl$haulid,depth_haul$haulid),c("depth")])
+colnames(trawl)[ncol(trawl)] <- "depth2"
+trawl$depth <- ifelse(is.na(trawl$depth),trawl$depth2,trawl$depth)
+trawl <- trawl[,-ncol(trawl)] 
+
+rm(pel_family,adapt,norw,noCpue,norw_dat,datras,survey3,gd_new,traits,traits_large,large,INF_nb,depth_haul)

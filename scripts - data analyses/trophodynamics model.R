@@ -1,5 +1,5 @@
 
-dat <- ttfin
+dat <- timeser
 dat$frac <- dat$Dem/(dat$Dem + dat$Pel)
 
 dat$totcatch <- dat$catch/dat$frac
@@ -13,7 +13,7 @@ TE <- 0.1 * 2.5^((10-dat$SST)/10)
 
 # conversions
 dat$NPP <- dat$NPP * 9*365 # mg C / m**2 / day --> mg/m2/year == kg/km2/year
-dat$ben_prod <- 10*dat$ben_prod
+dat$ben_prod <- 10*dat$ben_prod # get detritus flux
 dat$ben_prod <- dat$ben_prod *1000     # g / m**2 / year --> kg/km2/year
 dat$lz_prod <-  dat$lz_prod*1000
 
