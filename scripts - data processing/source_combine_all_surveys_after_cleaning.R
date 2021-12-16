@@ -108,6 +108,25 @@ trawl$size <- ifelse(trawl$spp %in% large,"large","small")
 trawl <- cbind(trawl,traits[match(trawl$spp,traits$taxon),c("tl")])
 colnames(trawl)[ncol(trawl)] <- "tl"
 
+# add tl for NAs
+tne <- subset(trawl,is.na(trawl$tl))
+tne <- data.frame(species = unique(tne$spp))
+tne$name <- sapply(strsplit(tne$species," "), `[`, 1)
+tne <- cbind(tne,traits[match(tne$name,traits$taxon),c("tl")])
+genus <- aggregate(traits$tl,by=list(traits$genus),FUN=mean)
+tne <- cbind(tne,genus[match(tne$name,genus$Group.1),c("x")])
+family <- aggregate(traits$tl,by=list(traits$family),FUN=mean)
+tne <- cbind(tne,family[match(tne$name,family$Group.1),c("x")])
+colnames(tne) <- c("species","name","taxon","genus","family")
+tne$trophic <- tne$taxon
+tne$trophic <- ifelse(!(is.na(tne$trophic)) , tne$trophic,tne$genus)
+tne$trophic <- ifelse(!(is.na(tne$trophic)) , tne$trophic,tne$family)
+tne$trophic <- ifelse(!(is.na(tne$trophic)) , tne$trophic, 3.77) # few NAs left - take the mean of all 
+trawl <- cbind(trawl,tne[match(trawl$spp,tne$species),c("trophic")])
+colnames(trawl)[ncol(trawl)] <- "trophic"
+trawl$tl <- ifelse(!(is.na(trawl$tl)),trawl$tl,trawl$trophic)
+trawl <- trawl[,-ncol(trawl)]
+
 ###############
 #### add depths for the hauls with no information using ETOPO ICE depth information
 ###############
@@ -117,4 +136,4 @@ colnames(trawl)[ncol(trawl)] <- "depth2"
 trawl$depth <- ifelse(is.na(trawl$depth),trawl$depth2,trawl$depth)
 trawl <- trawl[,-ncol(trawl)] 
 
-rm(pel_family,adapt,norw,noCpue,norw_dat,datras,survey3,gd_new,traits,traits_large,large,INF_nb,depth_haul)
+rm(pel_family,adapt,norw,noCpue,norw_dat,datras,survey3,gd_new,traits,traits_large,large,INF_nb,depth_haul,tne,genus,family)

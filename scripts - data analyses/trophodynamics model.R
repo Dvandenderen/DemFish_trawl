@@ -50,3 +50,21 @@ abline(0,1)
 
 xx <-  1690649*TTE^(dat$tl-1)/dat$ER
 
+
+############# final mod
+tt$ER <- tt$Catch_sqkm / tt$biomass
+tt$frac <- tt$Catch_sqkm /(tt$Catch_sqkm + tt$Catch_pel_sqkm)
+
+# conversions
+tt$NPP <- tt$NPP * 9*365 # mg C / m**2 / day --> mg/m2/year == kg/km2/year
+tt$ben_prod <- 10*tt$ben_prod # get detritus flux
+tt$ben_prod <- tt$ben_prod *1000     # g / m**2 / year --> kg/km2/year
+tt$lz_prod <-  tt$lz_prod*1000
+
+TE <- 0.1
+TE <- 0.1 * .55 ^((tt$SST-10)/10)
+
+bio <- tt$ben_prod*TE^(tt$tlw-1) + tt$frac*tt$lz_prod*TE^(tt$tlw-2.1) /tt$ER
+summary(lm(log10(bio)~log10(tt$biomass)))
+
+
