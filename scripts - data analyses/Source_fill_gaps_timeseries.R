@@ -118,7 +118,9 @@ for (ideg in 1:length(degrees)){
     cpue_good <- subset(cpue_good,!(cpue_good$uni_cell == degrees[ideg]))
     cpue_good <- rbind(cpue_good,res)
 }
-  
+  ### add degrees here to remove all without
+cpue_good <- subset(cpue_good,cpue_good$uni_cell  %in% degrees)
+
 rm(list=setdiff(ls(), c("cpue","grid_master","depth_grid","cpue_good","timeser","degrees")))
 
   

@@ -10,11 +10,11 @@ plot(pac$long,pac$lat ,col="blue")
 conception <- subset(pac,pac$lat > 31.5 & pac$lat <36)
 points(conception$long,conception$lat ,col="red")
 
-Monterey <- subset(pac,pac$lat > 36 & pac$lat <40.3)
+Monterey <- subset(pac,pac$lat > 36 & pac$lat <43)
 points(Monterey$long,Monterey$lat ,col="red")
 
-Eureka <- subset(pac,pac$lat > 40.3 & pac$lat < 43)
-points(Eureka$long,Eureka$lat ,col="red")
+#Eureka <- subset(pac,pac$lat > 40.3 & pac$lat < 43)
+#points(Eureka$long,Eureka$lat ,col="red")
 
 Columbia <- subset(pac,pac$lat > 43 & pac$lat < 47.3)
 points(Columbia$long,Columbia$lat ,col="red")
@@ -162,25 +162,42 @@ southNS <- subset(NEA,NEA$lat < 56.5 & NEA$lat > 52 & NEA$long < 9 & NEA$ECO_REG
 points(southNS$long,southNS$lat ,col="red")
 
 northNS <- subset(NEA,NEA$lat > 56.5  & NEA$long < 9 & NEA$ECO_REG =="North Sea")
-points(northNS$long,northNS$lat ,col="red")
+points(northNS$long,northNS$lat ,col="green")
 
 katskag <- subset(NEA,NEA$long > 9 & NEA$ECO_REG =="North Sea")
 points(katskag$long,katskag$lat ,col="red")
 
-Southnor <- subset(NEA,NEA$lat < 62.5 & NEA$ECO_REG =="Southern Norway")
+Southnor <- subset(NEA,NEA$lat < 64 & NEA$ECO_REG =="Southern Norway")
 points(Southnor$long,Southnor$lat ,col="red")
 
-Southnor2 <- subset(NEA,NEA$lat > 62.5 & NEA$ECO_REG =="Southern Norway")
+Southnor2 <- subset(NEA,NEA$lat >= 64 & NEA$ECO_REG =="Southern Norway")
 points(Southnor2$long,Southnor2$lat ,col="red")
 
 Baltic <- subset(NEA, NEA$ECO_REG =="Baltic Sea")
 points(Baltic$long,Baltic$lat ,col="red")
 
-Northnor <- subset(NEA,NEA$ECO_REG =="Northern Norway and Finnmark")
-points(Northnor$long,Northnor$lat ,col="red")
+Northnor1 <- subset(NEA,NEA$ECO_REG =="Northern Norway and Finnmark" & NEA$lat < 74 & NEA$long< 22)
+points(Northnor1$long,Northnor1$lat ,col="green")
 
-Barents <- subset(NEA,NEA$ECO_REG =="North and East Barents Sea")
-points(Barents$long,Barents$lat ,col="red")
+Northnor2 <- subset(NEA,NEA$ECO_REG =="Northern Norway and Finnmark" & !(NEA$uni %in% Northnor1$uni))
+points(Northnor2$long,Northnor2$lat ,col="red")
+
+Barents1 <- subset(NEA,NEA$ECO_REG =="North and East Barents Sea" & NEA$lat < 73 & !(NEA$uni %in% "ID_674"))
+points(Barents1$long,Barents1$lat ,col="green")
+
+Barents2 <- subset(NEA,NEA$ECO_REG =="North and East Barents Sea" & NEA$lat >= 73 & NEA$lat <76 & NEA$long < 28 )
+Barents2b <- subset(NEA,NEA$uni == "ID_674")
+Barents2 <- rbind(Barents2,Barents2b)
+points(Barents2$long,Barents2$lat ,col="red")
+
+Barents3 <- subset(NEA,NEA$ECO_REG =="North and East Barents Sea" & NEA$lat >= 73 & NEA$lat <76  & NEA$long>= 28)
+points(Barents3$long,Barents3$lat ,col="red")
+
+Barents4 <- subset(NEA,NEA$ECO_REG =="North and East Barents Sea" & NEA$lat >= 76  & NEA$long < 28)
+points(Barents4$long,Barents4$lat ,col="green")
+
+Barents5 <- subset(NEA,NEA$ECO_REG =="North and East Barents Sea" & NEA$lat >= 76  & NEA$long >= 28)
+points(Barents5$long,Barents5$lat ,col="red")
 
 grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Iberianc$uni,"Iberianc",grid_master@data$subdivision)
 grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Biscay$uni,"Biscay",grid_master@data$subdivision)
@@ -195,7 +212,12 @@ grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% katskag$uni,"ka
 grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Southnor$uni,"Southnor",grid_master@data$subdivision)
 grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Southnor2$uni,"Southnor2",grid_master@data$subdivision)
 grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Baltic$uni,"Baltic",grid_master@data$subdivision)
-grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Northnor$uni,"Northnor",grid_master@data$subdivision)
-grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Barents$uni,"Barents",grid_master@data$subdivision)
+grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Northnor1$uni,"Northnor1",grid_master@data$subdivision)
+grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Northnor2$uni,"Northnor2",grid_master@data$subdivision)
+grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Barents1$uni,"Barents1",grid_master@data$subdivision)
+grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Barents2$uni,"Barents2",grid_master@data$subdivision)
+grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Barents3$uni,"Barents3",grid_master@data$subdivision)
+grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Barents4$uni,"Barents4",grid_master@data$subdivision)
+grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Barents5$uni,"Barents5",grid_master@data$subdivision)
 
-
+save(grid_master,file="cleaned data/surveyed_grid.RData")

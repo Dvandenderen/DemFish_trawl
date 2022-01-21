@@ -87,16 +87,12 @@ cpue <- trawl %>%
 cpue$uni <- paste(cpue$uni_cell,cpue$year)
 cpue$year <- as.numeric(cpue$year)
 
-#cpue <- cbind(cpue,grid_master@data[match(cpue$uni_cell,grid_master@data$uni),c("ECO_REG")])
-#colnames(cpue)[ncol(cpue)] <- "ECO_REG" 
-#cpue <- subset(cpue,!(is.na(cpue$uni_cell)))
+#depth_grid <- trawl %>%
+#  group_by(uni_cell,year) %>%
+#  summarise_at (c("depth"),mean, na.rm=T) %>%
+#  as.data.frame ()
 
-depth_grid <- trawl %>%
-  group_by(uni_cell) %>%
-  summarise_at (c("depth"),mean, na.rm=T) %>%
-  as.data.frame ()
-
-rm(list=setdiff(ls(), c("cpue","grid_master","depth_grid")))
+rm(list=setdiff(ls(), c("cpue","grid_master"))) #,"depth_grid"
 
 source("scripts - data analyses/Source_gridcells_timeseries.R")
 source("scripts - data analyses/Source_fill_gaps_timeseries.R")

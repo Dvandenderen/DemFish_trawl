@@ -44,9 +44,18 @@ walk_avg <- aggregate(geareff$Efficiency,by=list(geareff$Group),FUN = mean,na.rm
 effi <- cbind(walk_avg,nefsc_GRP[match(walk_avg$Group.1,nefsc_GRP$GRP),c(2)])
 colnames(effi) <- c("group","Walker","NEFSC")
 
-plot(effi$Walker,effi$NEFSC,xlim=c(0,0.5),ylim=c(0,0.5),col="white",xlab="Walker - lenght-based average q",ylab="NEFSC - q")
+pdf("figures/q_value comparison.pdf",width=5,height=4.5)
+plot(effi$Walker,effi$NEFSC,xlim=c(0,0.5),ylim=c(0,0.5),col="white",xlab="Walker et al. q values",ylab="NEFSC q values",
+     xaxt="n",yaxt="n")
+axis(1,c(0,0.25,0.5))
+axis(2,c(0,0.25,0.5),las=1)
 text(effi$Walker,effi$NEFSC,effi$group)
 
 tr<- effi[-5,]
 cor(tr$Walker,tr$NEFSC)
 
+mod1 <- lm(tr$NEFSC~tr$Walker)
+x <- c(0,1)
+y <- coefficients(mod1)[1]+coefficients(mod1)[2]*x
+lines(y~x,col="red")
+dev.off()

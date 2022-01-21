@@ -15,12 +15,22 @@ plot(log10(stock$biomass),log10(stock$wt_q),xlim=c(-1,8),ylim=c(-1,8),xlab="Stoc
      ylab="Survey biomass - log10(MT)",main="",las=1,pch=16)
 abline(0,1)
 text(-0.5,7.5,"a)")
+mod1 <- lm(log10(stock$wt_q)~log10(stock$biomass))
+x <- c(-1,9)
+y <- coefficients(mod1)[1] + coefficients(mod1)[2]*x 
+lines(y~x,lty=5)
+
 #points(log10(stock$biomass[stock$toanalyze <30]),log10(stock$wt_q[stock$toanalyze <30]),col="blue",pch=16)
 
 plot(log10(stock$biomass),log10(stock$wt),xlim=c(-1,8),ylim=c(-1,8),xlab="Stock assess. biomass - log10(MT)",
      ylab="",main="",las=1,pch=16)
 abline(0,1)
 text(-0.5,7.5,"b)")
+mod1 <- lm(log10(stock$wt)~log10(stock$biomass))
+x <- c(-1,9)
+y <- coefficients(mod1)[1] + coefficients(mod1)[2]*x 
+lines(y~x,lty=5)
+
 
 dev.off()
 

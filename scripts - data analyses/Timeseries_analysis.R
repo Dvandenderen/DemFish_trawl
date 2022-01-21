@@ -36,7 +36,7 @@ tt <- subset(tt,tt$year %in% c(1980:2015))
 tt$ER <- tt$Catch_sqkm/tt$biomass
 
 # get log 
-tt$LLER  <- log(tt$ER)
+tt$LLER  <- log10(tt$ER)
 
 # get across species temperature (average per species)
 temp <- tt %>% 
@@ -53,7 +53,7 @@ tt$SST_within <- tt$SST - tt$SST_across
 tt$LLER_within <- tt$LLER - tt$LLER_across
 
 library(lattice)
-xyplot(tt$biomass ~ tt$year | tt$ECO_REG, col = 1)
+xyplot(tt$biomass ~ tt$year | tt$ECO_REG, col = 1, type="o")
 
 # fit model with temporal autocorrelation nested within ecoregion
 ####################################################  
@@ -84,7 +84,7 @@ E <- residuals(fit3, type = "normalized")
 acf(E)
     
 # now see if there is statistical difference between slopes of within and between region model
-fit3_contrast <- lme(biomass ~ SST + SST_across +  tlw_within + tlw_across +  LLER + LLER_across, 
+fit3_contrast <- lme(biomass ~ SST + SST_across +  tlw + tlw_across +  LLER + LLER_across, 
                       random= ~ 1|ECO_REG, correlation=cs1, data=tt)
 
 #constrast shows that fishing effect has same slope within and across
@@ -106,22 +106,66 @@ fit3_contrast <- lme(biomass ~ SST + SST_across +  tlw_within + tlw_across +  LL
 #the same. 
 
 # now see if there is a random slope of SST 
-fit4_a <- lme(biomass ~ SST_within + SST_across +  LLER , 
+fit4_a <- lme(biomass ~ SST_within + SST_across +  LLER, 
             random= ~ 1 |ECO_REG, correlation=cs1, data=tt)
 
-fit4_b <- lme(biomass ~ SST_within + SST_across +  LLER , 
+fit4_b <- lme(biomass ~ SST_within + SST_across +  LLER, 
                      random= ~ 1 + SST_within|ECO_REG, correlation=cs1, data=tt)
 rand <- ranef(fit4_b); rand$ECO_REG <- rownames(rand)
 
 temp <- cbind(temp,rand[match(temp$ECO_REG,rand$ECO_REG),c("SST_within")])
 colnames(temp)[5] <- "slope"
+temp[order(temp$slope),]
 
-temp$fact <- ifelse(temp$SST_across < 9, "C",NA )
-temp$fact <- ifelse(temp$SST_across > 8 & temp$SST_across < 12, "C2",temp$fact)
-temp$fact <- ifelse(temp$SST_across > 14, "W",temp$fact )
-temp$fact <- ifelse(is.na(temp$fact),"T",temp$fact)
+# plot within ecoregion temperature variation
+load("cleaned data/surveyed_grid.RData") # get grid information
+grid_master <- cbind(grid_master,cpue_good[match(grid_master@data$uni_cell,cpue_good$uni_cell),c("biomass")])
+colnames(grid_master@data)[ncol(grid_master@data)] <- "biomass"
 
-boxplot(temp$slope ~ as.factor(temp$fact))
+grid_master <- cbind(grid_master,temp[match(grid_master@data$ECO_REG,temp$ECO_REG),c("slope")])
+colnames(grid_master@data)[ncol(grid_master@data)] <- "slope"
+
+ncoords <- subset(grid_master,!(is.na(grid_master@data$biomass)))
+
+ctrys <- rnaturalearth::ne_countries(scale = 50, returnclass = "sf")
+minlong <- -180 #round(min(filedata$long)-1)
+maxlong <- 51
+minlat  <- 23
+maxlat  <- 83
+coordslim <- c(minlong,maxlong,minlat,maxlat)
+coordxmap <- round(seq(minlong,maxlong,length.out = 4))
+coordymap <- round(seq(minlat,maxlat,length.out = 4))
+
+nco <- sf::st_as_sf(ncoords)
+
+shape <- readOGR(dsn = "C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Data analysis/MEOW shapefiles" ,layer="meow_ecos")
+shape <- subset(shape,shape@data$ECOREGION %in% temp$ECO_REG)
+
+# plot map
+figmap <- ggplot(nco) + 
+  geom_sf( aes(fill=slope), colour = NA ) + 
+  scale_fill_viridis(name="Temperature slope") +
+  geom_sf(data = ctrys, fill="grey",colour=NA) 
+
+figmap <-  figmap +  theme(plot.background=element_blank(),
+                           panel.background=element_blank(),
+                           axis.text.y   = element_text(size=11),
+                           axis.text.x   = element_text(size=11),
+                           axis.title.y  = element_blank(),
+                           axis.title.x  = element_blank(),
+                           panel.border  = element_rect(colour = "grey", size=.5,fill=NA),
+                           legend.text   = element_text(size=11),
+                           legend.title  = element_text(size=11))+
+  coord_sf(xlim = c(-180, 51), ylim = c(20, 84), expand = FALSE) +
+  scale_x_continuous(breaks=coordxmap)  +
+  scale_y_continuous(breaks=coordymap)
+
+figmap  <- figmap +  geom_polygon(data = shape, aes(x = long, y = lat, group = group),color="grey",fill=NA)
+
+pdf("figures/biomass_within_region_slope.pdf",width=10,height=4) 
+grid.arrange(figmap, nrow = 1,
+             left = "Latitude",bottom = "Longitude")
+dev.off()
 
 ######
 # do data gaps matter for the within response?
@@ -135,10 +179,15 @@ cs1 <- corARMA(c(0.1,-0.1), p = 2, q = 0,form =~ year|ECO_REG)
 fit3 <- lme(biomass ~ SST_within + SST_across +  tlw_within + tlw_across +  LLER_within + LLER_across, 
             random= ~ 1|ECO_REG, 
             correlation=cs1, data=ttnew)
-AIC(fit1,fit2,fit3)
 
+# now see if there is statistical difference between slopes of within and between region model
+fit3_contrast <- lme(biomass ~ SST + SST_across +  tlw + tlw_across +  LLER + LLER_across, 
+                     random= ~ 1|ECO_REG, correlation=cs1, data=ttnew)
 
+#######################################################
+######
 # now can we fit a recurring model?
+######
 ttnew <- subset(tt, tt$ECO_REG %in% c("Eastern Bering Sea"))
 
 trcFunc <- function(SST,MTL,Bio,Catch,a,g,b,d){((1+a-g*SST-d*MTL-b*Bio)*Bio - Catch)}
