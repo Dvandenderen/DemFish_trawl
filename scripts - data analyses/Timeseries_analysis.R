@@ -167,6 +167,37 @@ grid.arrange(figmap, nrow = 1,
              left = "Latitude",bottom = "Longitude")
 dev.off()
 
+# plot the predicted line
+#Value Std.Error  DF    t-value p-value
+#(Intercept)  23293.194  8228.554 419   2.830776  0.0049
+#SST_within    2847.498  1318.665 419   2.159379  0.0314
+#SST_across   -1626.190   569.450  19  -2.855722  0.0101
+#LLER        -19302.316  1574.117 419 -12.262312  0.0000
+
+sst_across <- c(min(temp$SST_across),max(temp$SST_across))
+bio <- 23293.194 + -1626.190 *sst_across -19302.316 * log10(0.02) + 2847.498*0
+plot(bio/1000~sst_across,type="l",lwd=2,ylim=c(0,110),xlab="Temperature",ylab="Biomass",las=1,col="blue")
+
+loc <- c("p","n","e","n","p","e","p","e","e","p","n","n","p","e","n","p","e","n","p","n","e")
+
+for ( j in 1:nrow(rand)){
+  dd <- subset(tt,tt$ECO_REG == rand$ECO_REG[j])
+  SST_within <- c(min(dd$SST_within),max(dd$SST_within))
+  if (length(unique(SST_within)) > 1){
+    T_across <- rep(dd$SST_across[1],2)
+    LLER <- rep(log10(0.02),2)
+    yn <- 23293.194  + rand$`(Intercept)`[j] +-1626.190 *T_across +
+      2847.498*SST_within + rand$SST_within[j] * SST_within -19302.316*LLER 
+    Tall <- c(min(dd$SST),max(dd$SST))
+    if(loc[j] == "p"){
+      lines(yn/1000~Tall,col="grey",lwd=1)
+    } else {
+      lines(yn/1000~Tall,col="grey",lwd=1)
+    }
+  }
+}
+
+
 ######
 # do data gaps matter for the within response?
 # select all regions with good time series

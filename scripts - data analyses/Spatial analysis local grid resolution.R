@@ -24,8 +24,8 @@ filename <- cpue_good
 grid <- grid_master
 depthgr <- depth_grid
 sstcobe <- sstdat
-t_start <- 2010
-t_end <- 2015
+t_start <- 1990
+t_end <- 1995
 
 #  subset t_start : t_end
 cpue_final <- subset(filename,filename$year >= t_start & filename$year <= t_end)
@@ -65,6 +65,7 @@ dat$ER_log <- log10((dat$Catch_sqkm + 0.001)/dat$biomass)
 dat <- subset(dat,!(is.na(dat$lz_prod)))
 dat <- subset(dat,!(is.na(dat$ben_prod)))
 dat <- subset(dat,!(is.na(dat$SST_time)))
+dat <- subset(dat,!(is.na(dat$tlw)))
 dat <- subset(dat,dat$biomass < 200000)
 dat.lm <- lm(biomass ~ SST_time +  ER_log + tlw + lz_prod, data=dat)
 dat$Resid <- rstandard(dat.lm)
@@ -105,15 +106,20 @@ plot(residuals(data.spatialCor.glsRatio , type = "normalized") ~
 plot(nlme:::Variogram(data.spatialCor.glsRatio, form = ~lat + long,
                       resType = "normalized"))
 
-mo1 <- gls(biomass ~ SST_time +  ER_log + tlw + lz_prod, data = dat,
-                                correlation = corRatio(form = ~lat + long, nugget = TRUE),
-                                method = "REML")
 
-mo2 <- gls(biomass ~ SST_time +  ER_log + tlw + ben_prod, data = dat,
-                                correlation = corRatio(form = ~lat + long, nugget = TRUE),
-                                method = "REML")
 
-mo3 <- gls(biomass ~ SST_time +  ER_log + tlw + lz_prod, data = dat,
+mo1 <- gls(biomass ~ SST_time  +  ER_log + tlw + lz_prod + ben_prod, data = dat,
+                                correlation = corRatio(form = ~lat + long, nugget = TRUE),
+                                method = "ML")
+
+mo2 <- gls(biomass ~ SST_time +  ER_log + tlw + lz_prod, data = dat,
+                                correlation = corRatio(form = ~lat + long, nugget = TRUE),
+                                method = "ML")
+
+mo3 <- gls(biomass ~ SST_time +  ER_log + tlw , data = dat,
                               correlation = corExp(form = ~lat + long, nugget = TRUE),
-                              method = "REML")
+                              method = "ML")
+
+AIC(mo1,mo2)
+
 
