@@ -1,6 +1,6 @@
 #############################################################
 #### Code to download and clean survey data from DATRAS
-#### Coding: Aurore Maureaud, March 2021
+#### Coding: Aurore Maureaud, March 2021 // updated: Daniel van Denderen July 2021
 
 ####
 #### Coding updated for wingspread / catch per unit area information

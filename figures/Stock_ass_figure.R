@@ -31,7 +31,6 @@ x <- c(-1,9)
 y <- coefficients(mod1)[1] + coefficients(mod1)[2]*x 
 lines(y~x,lty=5)
 
-
 dev.off()
 
 ## per region

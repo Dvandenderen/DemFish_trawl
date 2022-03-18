@@ -102,7 +102,7 @@ depth_grid <- trawl %>%
   summarise_at (c("depth"),mean, na.rm=T) %>%
   as.data.frame ()
 
-save(depth_grid,file="cleaned data/211216_depth_grid.RData")
+save(depth_grid,file="cleaned data/Depth_grid.RData")
 
 rm(list=setdiff(ls(), c("cpue","grid_master","depth_grid")))
 
@@ -175,4 +175,4 @@ cpue_good$Catch_sqkm[is.na(cpue_good$Catch_sqkm)] <- 0
 cpue_good$Catch_pel_sqkm[is.na(cpue_good$Catch_pel_sqkm)] <- 0
 
 # save data 
-save(cpue_good,file="cleaned data/211216_biomass_grid.RData")
+save(cpue_good,file="cleaned data/220224_biomass_grid.RData")

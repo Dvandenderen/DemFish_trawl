@@ -4,7 +4,7 @@
 ##########
 
 # region 1 - North American Pacific Fijordland
-degrees_sub <- c("ID_250","ID_204","ID_205","ID_209")  # grid cells with biomass estimate in "wrong" year
+degrees_sub <- c("ID_-128.19_50.22","ID_204","ID_-132.79_52.68","ID_-132.62_53.46")  # grid cells with biomass estimate in "wrong" year
 years <- data.frame(year = c(2003,2005,2007,2009,2011,2013,2015,2017,2019) ) # years for which data is needed
 
 # get for all points with data +- 1 year the average
@@ -24,7 +24,8 @@ for (ideg in 1:length(degrees_sub)){
 }
 
 # region 2 - Aleutian Islands 
-degrees_sub <- c("ID_50","ID_34","ID_28","ID_22","ID_16","ID_19")   # grid cells with biomass estimate in "wrong" year
+degrees_sub <- c("ID_-170.57_51.93", "ID_-169.71_52.48", "ID_-167.68_52.8",  
+                 "ID_-166.78_53.34", "ID_-165.62_53.1",  "ID_-164.71_53.63")   # grid cells with biomass estimate in "wrong" year
 years <- data.frame(year = c(1983,1986,1991,1994,1997,2000,2002,2004,2006,2010,2012,2014,2016,2018) ) # years for which data is needed
 
 for (ideg in 1:length(degrees_sub)){

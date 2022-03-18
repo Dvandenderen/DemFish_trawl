@@ -16,6 +16,7 @@ library(tidyverse)
 ###########
 load("cleaned data/surveyed_grid.RData")
 source("scripts - data processing/source_combine_all_surveys_after_cleaning.R")
+# trawl <- subset(trawl,!(trawl$region== "Northeast US Spring"))
 
 ##############################################
 # get all survey estimates per year on the grid 
@@ -106,6 +107,8 @@ colnames(cpue_good)[ncol(cpue_good)] <- "ocean_sqkm"
 ########
 
 # load Regs fisheries database (v4.0)
+C7074 <- readRDS("C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Data analysis/Catch_all_1970_1974.rds")
+C7579 <- readRDS("C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Data analysis/Catch_all_1975_1979.rds")
 C8084 <- readRDS("C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Data analysis/Catch_all_1980_1984.rds")
 C8589 <- readRDS("C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Data analysis/Catch_all_1985_1989.rds")
 C9094 <- readRDS("C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Data analysis/Catch_all_1990_1994.rds")
@@ -175,6 +178,9 @@ for(j in 1:nrow(cpue_good)){
   if (length(coll)>0){
   cpue_good$SST[j] <- sstdat[row,coll]
   }}
+
+# remove first three years Northern Gulf of Mexico
+cpue_good <- subset(cpue_good,!(cpue_good$ECO_REG =="Northern Gulf of Mexico" & cpue_good$year %in% c(1982:1984)))
 
 # save data 
 save(cpue_good,file="cleaned data/final_timeseries_grid.RData")

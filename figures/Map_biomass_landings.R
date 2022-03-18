@@ -8,10 +8,11 @@ library(sf)
 library(gridExtra)
 library(viridis)
 library(ggplot2)
+library(latex2exp)
 
 ##################
 load("cleaned data/surveyed_grid.RData") # get grid information
-load("cleaned data/211216_biomass_grid.RData") # get biomass per grid cell and year
+load("cleaned data/220224_biomass_grid.RData") # get biomass per grid cell and year
 
 cpue_final <- subset(cpue_good,cpue_good$year >= 2000 & cpue_good$year <= 2010)
 cpue_final <-  aggregate(list(cpue_final$biomass,cpue_final$tlw,cpue_final$tl_95,
@@ -43,8 +44,10 @@ nco <- sf::st_as_sf(ncoords)
 # plot map
 figmap <- ggplot(nco) + 
   geom_sf( aes(fill=dembio), colour = NA ) + 
-  scale_fill_viridis(name="Tonnes / km2") +
+  scale_fill_viridis(name="Tonnes / km2", limits = c(0,80),
+                     labels = c("20","40","60",TeX("$\\geq$80")),breaks=c(20,40,60,80)) +
     geom_sf(data = ctrys, fill="grey",colour=NA) 
+
 
 figmap <-  figmap +  theme(plot.background=element_blank(),
                            panel.background=element_blank(),

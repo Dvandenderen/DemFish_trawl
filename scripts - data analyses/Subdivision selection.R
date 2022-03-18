@@ -1,6 +1,8 @@
 
-load("cleaned data/surveyed_grid.RData")
+# goal is to get a spatial scale that is finer than ecoregion but larger than local grid
+# Pacific selection is based on Ware & Thomson DOI: 10.1126/science.1109049
 
+load("cleaned data/surveyed_grid.RData")
 xdat <- data.frame(grid_master@data$uni_cell,grid_master@data$ECO_REG,coordinates(grid_master))
 colnames(xdat) <- c("uni","ECO_REG","long","lat")
 
@@ -60,7 +62,7 @@ points(EBS3$long,EBS3$lat ,col="pink")
 grid_master@data$subdivision <- NA
 grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% conception$uni,"Conception",grid_master@data$subdivision)
 grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Monterey$uni,"Monterey",grid_master@data$subdivision)
-grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Eureka$uni,"Eureka",grid_master@data$subdivision)
+#grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Eureka$uni,"Eureka",grid_master@data$subdivision)
 grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Columbia$uni,"Columbia",grid_master@data$subdivision)
 grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Charlotte$uni,"Charlotte",grid_master@data$subdivision)
 grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Vancouver$uni,"Vancouver",grid_master@data$subdivision)
@@ -112,7 +114,7 @@ ESGLaw <- subset(NWA,NWA$lat < 48 & NWA$lat >45.5 & NWA$long > -67 & NWA$ECO_REG
 points(ESGLaw$long,ESGLaw$lat ,col="orange")
 
 GulfLaw <- subset(NWA, !(NWA$uni %in% ESGLaw$uni) &!(NWA$uni %in% EastScotian$uni) & NWA$ECO_REG =="Gulf of St. Lawrence - Eastern Scotian Shelf")
-points(GulfLaw$long,GulfLaw$lat ,col="blue")
+points(GulfLaw$long,GulfLaw$lat ,col="red")
 
 grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% GuM1$uni,"GuM1",grid_master@data$subdivision)
 grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% GuM2$uni,"GuM2",grid_master@data$subdivision)
@@ -138,23 +140,26 @@ Biscay <- subset(NEA,NEA$lat > 43 & NEA$ECO_REG =="South European Atlantic Shelf
 points(Biscay$long,Biscay$lat ,col="red")
 
 southCS <- subset(NEA,NEA$lat < 51.5 & NEA$long < -5 & NEA$ECO_REG =="Celtic Seas")
-southCS2 <- subset(NEA,NEA$uni == "ID_1074")
+southCS2 <- subset(NEA,NEA$uni == "ID_-4.8_49.26")
 southCS <- rbind(southCS,southCS2)
 points(southCS$long,southCS$lat ,col="red")
 
 IrishS <- subset(NEA,NEA$lat > 51.5 & NEA$lat < 56 & NEA$long > -8 & NEA$ECO_REG =="Celtic Seas")
-IrishS2 <- subset(NEA,NEA$uni == "ID_1032")
+IrishS2 <- subset(NEA,NEA$uni == "ID_-4.48_51.3")
 IrishS <- rbind(IrishS,IrishS2)
 points(IrishS$long,IrishS$lat ,col="red")
 
 midCS <- subset(NEA,NEA$lat > 51.5 & NEA$lat < 56 & NEA$long < -8 & NEA$ECO_REG =="Celtic Seas")
+midCS <- subset(midCS,!(midCS$uni %in% c("ID_-15.42_55.84","ID_-14.16_55.99")))
 points(midCS$long,midCS$lat ,col="red")
 
 northCS <- subset(NEA,NEA$lat > 56 & NEA$long & NEA$ECO_REG =="Celtic Seas")
+northCS2 <- subset(NEA,NEA$uni %in% c("ID_-15.42_55.84","ID_-14.16_55.99"))
+northCS <- rbind(northCS,northCS2)
 points(northCS$long,northCS$lat ,col="red")
 
 channel <- subset(NEA,NEA$lat < 52 & NEA$long & NEA$ECO_REG =="North Sea")
-channel2 <- subset(NEA,NEA$uni %in% c("ID_1075"))
+channel2 <- subset(NEA,NEA$uni %in% c("ID_-3.16_50.02"))
 channel <- rbind(channel,channel2)
 points(channel$long,channel$lat ,col="red")
 
@@ -186,7 +191,7 @@ Barents1 <- subset(NEA,NEA$ECO_REG =="North and East Barents Sea" & NEA$lat < 73
 points(Barents1$long,Barents1$lat ,col="green")
 
 Barents2 <- subset(NEA,NEA$ECO_REG =="North and East Barents Sea" & NEA$lat >= 73 & NEA$lat <76 & NEA$long < 28 )
-Barents2b <- subset(NEA,NEA$uni == "ID_674")
+Barents2b <- subset(NEA,NEA$uni == "ID_21.92_72.89")
 Barents2 <- rbind(Barents2,Barents2b)
 points(Barents2$long,Barents2$lat ,col="red")
 

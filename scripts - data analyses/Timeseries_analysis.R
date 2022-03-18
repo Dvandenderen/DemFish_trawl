@@ -219,15 +219,75 @@ fit3_contrast <- lme(biomass ~ SST + SST_across +  tlw + tlw_across +  LLER + LL
 ######
 # now can we fit a recurring model?
 ######
-ttnew <- subset(tt, tt$ECO_REG %in% c("Eastern Bering Sea"))
+ttnew <- tt
+ttnew <- ttnew[order(ttnew$ECO_REG, ttnew$year),]
+ttnew <-  ttnew %>% group_by(ECO_REG) %>% 
+  mutate(Bioplusone = lead(biomass ,1))
+ttnew <- ttnew[complete.cases(ttnew$Bioplusone), ]
+ttnew$Prod <- ttnew$Bioplusone - ttnew$biomass + ttnew$Catch_sqkm
+ttnew <-  ttnew %>% group_by(ECO_REG) %>% 
+          mutate(Prod_sd = Prod/max(biomass),
+                 Bio_sd  = biomass/max(biomass),
+                 SST_sd  = SST - mean(SST))
+ttnew <- as.data.frame(ttnew)
+
+lattice::xyplot(ttnew$Bio_sd ~ ttnew$year | ttnew$ECO_REG, col = 1, type="o")
+
+trcFunc <- function(Bio_sd,SST_sd,r,K,theta){
+  (r*(K-Bio_sd) * exp(SST_sd * theta))}
+
+mfit <- nls(Prod_sd~trcFunc(Bio_sd,SST_sd,r,K,theta),start=list(r=1,K=1,theta=0.1),data = ttnew)
+
+p30 = nlme(Prod_sd ~ trcFunc(Bio_sd,SST_sd,r,K,theta),
+           random = r + K+theta ~ 1|ECO_REG ,
+           fixed = r+K+theta ~ 1,
+           data = ttnew,
+           start = coef(mfit),
+           control=(msMaxIter=10^12))
+coef(p30)
+
+ttnew <-  ttnew %>% group_by(ECO_REG) %>% 
+  mutate(Catch_sd = Catch_sqkm/max(biomass),
+         Bio_sd  = biomass/max(biomass),
+         Bioplusone_sd  = Bioplusone/max(biomass),
+         SST_sd  = SST - mean(SST))
+ttnew <- as.data.frame(ttnew)
+
+
+trcFunc <- function(SST_sd,Bio_sd,Catch_sd,a,g,theta){
+  ((1+ a + exp(SST_sd * theta) + g* Bio_sd )* Bio_sd  - Catch_sd)}
+
+mfit <- nls(Bioplusone_sd~trcFunc(SST_sd,Bio_sd,Catch_sd,a,g,theta)
+            ,start=list(a=1,g=1,theta=0.1),data = ttnew)
+
+p30 = nlme(Bioplusone_sd ~ trcFunc(SST_sd,Bio_sd,Catch_sd,a,g,theta),
+           random =theta~ 1|ECO_REG ,
+           fixed = a+theta+g ~ 1,
+           data = ttnew,
+           start = coef(mfit),
+           control=(msMaxIter=10^100))
+
+rmod <- ranef(p30)
+rmod$tot <- coef(p30)[1,3] + rmod$q
+
+plot(rand$SST_within, coef(p30)[1,3])
+lines(x=c(0,0),y=c(-10,10))
+lines(x=c(-10000,10000),y=c(0,0))
+
+
 
 trcFunc <- function(SST,MTL,Bio,Catch,a,g,b,d){((1+a-g*SST-d*MTL-b*Bio)*Bio - Catch)}
 
-SST <- ttnew$SST_within[1:33] 
-MTL <- ttnew$tlw[1:33]
-Catch <-  ttnew$Catch_sqkm[1:33]
-Bio <- ttnew$biomass[1:33]
-y <- ttnew$biomass[2:34]
+
+ttnew <- subset(tt, tt$ECO_REG %in% c("North Sea"))
+
+trcFunc <- function(SST,MTL,Bio,Catch,a,g,b,d){((1+a-g*SST-d*MTL-b*Bio)*Bio - Catch)}
+
+SST <- ttnew$SST_within[1:35] 
+MTL <- ttnew$tlw[1:35]
+Catch <-  ttnew$Catch_sqkm[1:35]
+Bio <- ttnew$biomass[1:35]
+y <- ttnew$biomass[2:36]
 
 mfit <- nls(y~trcFunc(SST,MTL,Bio,Catch,a,g,b,d),start=list(a=1,b=0.1,g=0.1,d=0.1))
 

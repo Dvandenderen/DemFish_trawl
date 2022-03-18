@@ -108,7 +108,7 @@ trawl$size <- ifelse(trawl$spp %in% large,"large","small")
 trawl <- cbind(trawl,traits[match(trawl$spp,traits$taxon),c("tl")])
 colnames(trawl)[ncol(trawl)] <- "tl"
 
-# add tl for NAs
+# add tl for all NAs based on higher taxonomic level
 tne <- subset(trawl,is.na(trawl$tl))
 tne <- data.frame(species = unique(tne$spp))
 tne$name <- sapply(strsplit(tne$species," "), `[`, 1)
@@ -130,6 +130,9 @@ trawl <- trawl[,-ncol(trawl)]
 ###############
 #### add depths for the hauls with no information using ETOPO ICE depth information
 ###############
+# run -- Get depth for all hauls without information.R (ETOPO dataset is outside github)
+# no need to re-run
+
 load("cleaned data/Depth_hauls_NA.RData")
 trawl <- cbind(trawl,depth_haul[match(trawl$haulid,depth_haul$haulid),c("depth")])
 colnames(trawl)[ncol(trawl)] <- "depth2"

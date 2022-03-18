@@ -420,11 +420,11 @@ degrees <- c()
    cell <- subset(cell,!(is.na(cell$biomass)))
    table(cell$year)
    
-   cell_sub <- subset(cell,cell$year %in% c(1996:2019))
+   cell_sub <- subset(cell,cell$year %in% c(1970:2019))
    areaplot <- subset(grid_master,grid_master@data$ECO_REG==timeser[iReg,1])
    
    # par(mfrow = c(3, 4))
-   # for (j in 1996:2019){
+   # for (j in 1970:2019){
    #   cell_plot <- subset(cell_sub,cell_sub$year == j)
    #   tt <- subset(grid_master,grid_master@data$uni %in% cell_plot$uni_cell)
    #   plot(areaplot, main = j)
@@ -437,8 +437,8 @@ degrees <- c()
    #plot(areaplot, main = "all")
    #plot(tt,add=T, col="blue")
    
-   # table(tall$year) # good coverage from 1996-2019
-   timeser[iReg,2] <- 1996
+   # table(tall$year) # good coverage from 1970-2019
+   timeser[iReg,2] <- 1970
    timeser[iReg,3] <- 2019
    
    tall <- subset(tall,tall$year %in% c(timeser[iReg,2]:timeser[iReg,3]))
@@ -482,7 +482,7 @@ degrees <- c()
    cell <- subset(cell,!(is.na(cell$biomass)))
    table(cell$year)
    
-   cell_sub <- subset(cell,cell$year %in% c(1996:2019))
+   cell_sub <- subset(cell,cell$year %in% c(1970:2019))
    areaplot <- subset(grid_master,grid_master@data$ECO_REG==timeser[iReg,1])
    
    # par(mfrow = c(3, 4))
@@ -499,8 +499,8 @@ degrees <- c()
    #plot(areaplot, main = "all")
    #plot(tt,add=T, col="blue")
    
-   # table(tall$year) # good coverage from 1996-2019
-   timeser[iReg,2] <- 1996
+   # table(tall$year) # good coverage from 1974-2019
+   timeser[iReg,2] <- 1974
    timeser[iReg,3] <- 2019
    
    tall <- subset(tall,tall$year %in% c(timeser[iReg,2]:timeser[iReg,3]))
