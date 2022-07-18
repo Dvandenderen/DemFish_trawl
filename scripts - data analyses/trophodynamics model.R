@@ -36,7 +36,7 @@ dat$frac <- dat$Catch_sqkm/(dat$Catch_sqkm + dat$Catch_pel_sqkm)
 dat$NPP <- dat$NPP * 9*365 # mg C / m**2 / day --> mg/m2/year == kg/km2/year
 dat$ben_prod <- 10*dat$ben_prod # get detritus flux
 dat$ben_prod <- dat$ben_prod *1000     # g / m**2 / year --> kg/km2/year
-dat$lz_prod <-  dat$lz_prod*1000
+dat$lz_prod <-  dat$lz_prod*1000  + dat$mz_prod*1000
 
 ##### 
 # first estimate the "best" temperature sensitivity of the transfer efficiency
@@ -45,7 +45,7 @@ Q10dat <- as.data.frame(matrix(data = NA,ncol=2,nrow=length(Q10)))
 Q10dat$Q10 <- Q10
 
 for (i in 1:length(Q10)){
-  TE <- 0.14 * Q10[i] ^((dat$SST_time-10)/10)
+  TE <- 0.1 * Q10[i] ^((dat$SST_time-10)/10)
   bio <- dat$ben_prod*TE^(dat$tlw-1) + dat$frac*dat$lz_prod*TE^(dat$tlw-2.1) /dat$ER
   # plot(log10(bio),log10(dat$biomass))
   # abline(0,1)
@@ -68,7 +68,7 @@ dev.off()
 #### 
 # now make the prediction for the main manuscript
 
-TE <- 0.1 * 0.55 ^((dat$SST_time-10)/10)
+TE <- 0.1 * 0.5 ^((dat$SST_time-10)/10)
 bio <- dat$ben_prod*TE^(dat$tlw-1) + dat$frac*dat$lz_prod*TE^(dat$tlw-2.1) /dat$ER
 bio <- bio/1000 #kg per km2 to tonnes per km2
 biomass_obs <- dat$biomass/1000 #kg per km2 to tonnes per km2
@@ -78,7 +78,7 @@ x <- c(-0.25,2.5)
 y <- mod1$coefficients[1] + mod1$coefficients[2]*x
 pdf("figures/Predicted_versus_observed.pdf",width=4.5,height=4.5) 
 plot(log10(bio),log10(biomass_obs),xlab="Predicted biomass"
-     ,ylab="Observed biomass",xaxt="n",yaxt="n",xlim=c(-0.25,2.5),ylim=c(-0.25,2.5),pch=16)
+     ,ylab="Observed biomass",xaxt="n",yaxt="n",xlim=c(-0.25,2.7),ylim=c(-0.25,2.7),pch=16)
 lines(y,x,lty=5)
 axis(1,c(0,1,2),c("1","10","100"))
 axis(2,c(0,1,2),c("1","10","100"),las=1)
@@ -94,7 +94,7 @@ Sens <- as.data.frame(matrix(data=NA,nrow=7,ncol=5))
 
 datsens <- dat
 
-Q10t <- 0.55
+Q10t <- 0.5
 
 # get best model
 TE <- 0.1 * Q10t ^((datsens$SST_time-10)/10)
@@ -238,9 +238,9 @@ dat$frac <- dat$Catch_sqkm/(dat$Catch_sqkm + dat$Catch_pel_sqkm)
 dat$NPP <- dat$NPP * 9*365 # mg C / m**2 / day --> mg/m2/year == kg/km2/year
 dat$ben_prod <- 10*dat$ben_prod # get detritus flux
 dat$ben_prod <- dat$ben_prod *1000     # g / m**2 / year --> kg/km2/year
-dat$lz_prod <-  dat$lz_prod*1000
+dat$lz_prod <-  dat$lz_prod*1000 + dat$mz_prod*1000
 
-TE <- 0.1 * 0.55 ^((dat$SST_time-10)/10)
+TE <- 0.1 * 0.5 ^((dat$SST_time-10)/10)
 bio <- dat$ben_prod*TE^(dat$tlw-1) + dat$frac*dat$lz_prod*TE^(dat$tlw-2.1) /dat$ER
 bio <- bio/1000 #kg per km2 to tonnes per km2
 biomass_obs <- dat$biomass/1000 #kg per km2 to tonnes per km2

@@ -1,5 +1,5 @@
 ---
-title: "SEM output"
+title: "SEM output 50-250 meter depth"
 author: "D van Denderen"
 date: "April 2022"
 output: html_document
@@ -43,6 +43,13 @@ SEM model causal pathway is primarily based on predictor variables used in the m
 ```{r, warning = F, echo= T}
 # load workspace (spatial analysis.R)
 load (file = "C:/Users/danie/Documents/Online for git/DemFish_trawl/figures/my_work_space.RData")
+
+# create dataset by selecting depths 50 - 250 m
+depth_grid$uni <- paste(depth_grid$uni_cell,depth_grid$year)
+cpue_depth <- cbind(cpue_good,depth_grid[match(cpue_good$uni,depth_grid$uni),c(3)])
+colnames(cpue_depth)[ncol(cpue_depth)] <- "depth"
+cpue_depth <- subset(cpue_depth,cpue_depth$depth > 50 & cpue_depth$depth < 250)
+cpue_good <- subset(cpue_good,cpue_good$uni %in% cpue_depth$uni)
 
 # re-scale parameters
 semparam <- c("NPP","lz_prod","biomass","tlw","SST_time","ER_log")
@@ -298,7 +305,7 @@ f.modT1.est <- sem(modT2,fixed.x=F,data=datbio)
 tt8 <- summary(f.modT1.est,rsq=T,stand=T)
 
 SEM_out = rbind(tt1$PE,tt2$PE,tt3$PE,tt4$PE,tt5$PE,tt6$PE,tt7$PE,tt8$PE)
-write.csv(SEM_out,file="C:/Users/danie/Documents/Online for git/DemFish_trawl/figures/SEM_out.csv")
+write.csv(SEM_out,file="C:/Users/danie/Documents/Online for git/DemFish_trawl/figures/SEM_out50_250.csv")
 
 ```
 

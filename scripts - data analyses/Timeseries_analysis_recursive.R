@@ -35,38 +35,89 @@ library(nlme)
   
 ### fit model Jeremy
   trcFunc <- function(SST_sd,Bio_sd,Catch_sd,a,g,theta){
-                     ((1+ a + SST_sd * theta + g* Bio_sd )* Bio_sd  - Catch_sd)}
+    ((1+ a + theta*SST_sd + g* Bio_sd )* Bio_sd  - Catch_sd)}
   
   # fit easy model to obtain starting parameter for mixed model
   mfit <- nls(Bio_1y_sd~trcFunc(SST_sd,Bio_sd,Catch_sd,a,g,theta),
                                     start=list(a=1,g=1,theta=0.1),data = tt)
   
   p30 = nlme(Bio_1y_sd ~ trcFunc(SST_sd,Bio_sd,Catch_sd,a,g,theta),
-             random =theta ~ 1|Region,
+             random = a ~ 1|Region,
              fixed = a+theta+g ~ 1,
              data = tt,
              start = coef(mfit),
              control=(msMaxIter=10^10))
   
   summary(p30) # no indication that theta is important 
-  ranef(p30)   # random effect very small
+  #ranef(p30)   # random temp effect is very small
+  
+  trcFunc <- function(Bio_sd,Catch_sd,a,g){
+        ((1+ a + g* Bio_sd )* Bio_sd  - Catch_sd)}
+  
+  # fit easy model to obtain starting parameter for mixed model
+  mfit <- nls(Bio_1y_sd~trcFunc(Bio_sd,Catch_sd,a,g),
+              start=list(a=1,g=1),data = tt)
+  
+  p31 = nlme(Bio_1y_sd ~ trcFunc(Bio_sd,Catch_sd,a,g),
+             random = a ~ 1|Region,
+             fixed = a+g ~ 1,
+             data = tt,
+             start = coef(mfit),
+             control=(msMaxIter=10^10))
+  
+  summary(p31) # no indication that theta is important 
+
   
 ### fit model with carrying capacity term
   # based on Free et al. 2019 - Impacts of historical warming on marine fisheries production
   # note without the exp() I get issues with initial parameter estimates
+  trcFunc <- function(Bio_sd,r,K){
+    (r*Bio_sd*(1-Bio_sd/K))}
+  
+  mfit <- nls(Prod_sd~trcFunc(Bio_sd,r,K),
+              start=list(r=1,K=.1),data = tt) 
+  
+  rand <- nlme(Prod_sd ~ trcFunc(Bio_sd,r,K),
+                random = r ~ 1|Region , # r and K as random effect gives lowest AIC
+                fixed = r+K ~ 1,
+                data = tt,
+                start = coef(mfit),
+                control=(msMaxIter=10^12))
+  
+  rand2 <- nlme(Prod_sd ~ trcFunc(Bio_sd,r,K),
+                random = K ~ 1|Region , # r and K as random effect gives lowest AIC
+                fixed = r+K ~ 1,
+                data = tt,
+                start = coef(mfit),
+                control=(msMaxIter=10^12))
+  
+  rand3 <- nlme(Prod_sd ~ trcFunc(Bio_sd,r,K),
+               random = r+K ~ 1|Region , # r and K as random effect gives lowest AIC
+               fixed = r+K ~ 1,
+               data = tt,
+               start = coef(mfit),
+               control=(msMaxIter=10^12))
+
   trcFunc <- function(Bio_sd,SST_sd,r,K,theta){
     (r*Bio_sd*(1-Bio_sd/K) * exp(SST_sd * theta))}
   
-  mfit <- nls(Prod_sd~trcFunc(Bio_sd,SST_sd,r,K,theta),
+  mfitT <- nls(Prod_sd~trcFunc(Bio_sd,SST_sd,r,K,theta),
               start=list(r=1,K=.1,theta=0),data = tt) 
   
-  p30 = nlme(Prod_sd ~ trcFunc(Bio_sd,SST_sd,r,K,theta),
-             random = r + K  ~ 1|Region , # r and K as random effect gives lowest AIC
+  fixT <- nlme(Prod_sd ~ trcFunc(Bio_sd,SST_sd,r,K,theta),
+             random = r+K ~ 1|Region , # r and K as random effect gives lowest AIC
              fixed = r+K+theta ~ 1,
              data = tt,
-             start = coef(mfit),
+             start = coef(mfitT),
              control=(msMaxIter=10^12))
-  summary(p30) # K is less than 1, suggests weak changes over time
+  
+  randT <- nlme(Prod_sd ~ trcFunc(Bio_sd,SST_sd,r,K,theta),
+               random = theta ~ 1|Region , # r and K as random effect gives lowest AIC
+               fixed = r+K+theta ~ 1,
+               data = tt,
+               start = coef(mfitT),
+               control=(msMaxIter=10^12))
+  
   coef(p30)
   
   # could consider to add temporal auto on top (lower AIC, but no differences)

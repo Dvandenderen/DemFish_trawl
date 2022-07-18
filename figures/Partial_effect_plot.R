@@ -13,8 +13,8 @@ library(tidyverse)
 
 ##################
 load("cleaned data/surveyed_grid.RData") # get grid information
-load("cleaned data/211216_depth_grid.RData") # get depth per grid cell and year
-load("cleaned data/211216_biomass_grid.RData") # get biomass per grid cell and year
+load("cleaned data/Depth_grid.RData") # get depth per grid cell and year
+load("cleaned data/220224_biomass_grid.RData") # get biomass per grid cell and year
 load("cleaned data/sstdat_1967_2018_COBE.RData") # get SST COBE
 source("scripts - data analyses/source_get_bio_function.R") # source script to obtain biomass per ecoregion/subdiv
 
@@ -27,8 +27,7 @@ source("scripts - data analyses/Source_partial_effect_lm.R")
 pdf("figures/Partial effect.pdf",width=7.5,height=2.8)
 par(mfrow=c(1,4), mar=c(6, 4, 2, 1))
 
-mod1 <- lm(biomass~ LER + SST_time + tlw + ben_prod + lz_prod, data=dat)
-mod2 <- lm(biomass~ LER + SST_time + tlw + ben_prod + lz_prod, data=dat2)
+mod1 <- lm(biomass~ LER + SST_time + tlw  + lz_prod, data=dat)
 
 effect(mod1,"SST_time",0.95,x.label="Temp.",rug =T,y.label = "Partial biomass effect", line.color='blue')
 effect(mod1,"LER",0.95,x.label="Fishing exploit. rate",rug =T,y.label = "", line.color='blue')

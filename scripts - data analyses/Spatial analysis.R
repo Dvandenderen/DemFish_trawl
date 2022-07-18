@@ -20,7 +20,7 @@ load("cleaned data/sstdat_1967_2018_COBE.RData") # get SST COBE
 
 source("scripts - data analyses/source_get_bio_function.R") # source script to obtain biomass per ecoregion/subdiv
 
-save.image (file = "figures/my_work_space_up.RData")
+save.image (file = "figures/my_work_space.RData")
 
 # create data for 
 # 1) 3 time periods x 2 different regional boundaries
@@ -49,14 +49,16 @@ datSEMavg$pcount_years <- rowSums(pcount <0.05)
 datSEM <- read.csv("figures/SEM_out50_250.csv")
 
 # get average standardized coef
-datSEMavg <- data.frame(datSEM[1:30,2:4],AVG = rowMeans(data.frame(datSEM[1:30,6],datSEM[31:60,6],datSEM[61:90,6],datSEM[91:120,6],
-                                                                  datSEM[121:150,6],datSEM[151:180,6])))
-
+datSEMavg <- data.frame(datSEM[1:20,2:4],AVG_all = rowMeans(data.frame(datSEM[1:20,6],datSEM[81:100,6])),
+                        AVG_years = rowMeans(data.frame(datSEM[21:40,6],datSEM[41:60,6],datSEM[61:80,6],
+                                                        datSEM[101:120,6],datSEM[121:140,6],datSEM[141:160,6])))
 # get nb of times p <0.05
-pcount = data.frame(datSEM[1:30,9],datSEM[31:60,9],datSEM[61:90,9],datSEM[91:120,9],
-                    datSEM[121:150,9],datSEM[151:180,9])
-datSEMavg$pcount <- rowSums(pcount <0.05)
+pcount = data.frame(datSEM[1:20,9],datSEM[81:100,9])
+datSEMavg$pcount_all <- rowSums(pcount <0.05)
 
+pcount = data.frame(datSEM[21:40,9],datSEM[41:60,9],datSEM[61:80,9],
+                    datSEM[101:120,9],datSEM[121:140,9],datSEM[141:160,9])
+datSEMavg$pcount_years <- rowSums(pcount <0.05)
 ###
 ################### plot spatial map of residuals 
 
@@ -93,7 +95,7 @@ for (j in 1:6){
   datbio$ER_log <- log10((datbio$Catch_sqkm /datbio$biomass))
   datbio$biomass <- datbio$biomass / 1000 # get tonnes/km2
   
-  mod1 <- lm(biomass ~ tlw + ER_log + SST_time + ben_prod + lz_prod,dat=datbio)
+  mod1 <- lm(biomass ~ tlw + ER_log + SST_time +  lz_prod,dat=datbio)
   #plot(mod1) # residuals in most runs reasonable  
   datbio$residuals <- residuals(mod1)
 
