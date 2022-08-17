@@ -3,8 +3,9 @@
 # Pacific selection is based on Ware & Thomson DOI: 10.1126/science.1109049
 
 load("cleaned data/surveyed_grid.RData")
-xdat <- data.frame(grid_master@data$uni_cell,grid_master@data$ECO_REG,coordinates(grid_master))
-colnames(xdat) <- c("uni","ECO_REG","long","lat")
+xdat <- data.frame(grid_master@data$uni_cell,grid_master@data$ECO_REG,coordinates(grid_master),
+                   grid_master@data$Depth_map)
+colnames(xdat) <- c("uni","ECO_REG","long","lat","Depth")
 
 pac <- subset(xdat,xdat$long < -100)
 plot(pac$long,pac$lat ,col="blue")
@@ -47,15 +48,17 @@ Alislands <- subset(pac,pac$lat > 50 & pac$lat < 61 & pac$long < -170 & pac$long
                      pac$ECO_REG %in% c("Gulf of Alaska","Aleutian Islands" ))
 points(Alislands$long,Alislands$lat ,col="red")
 
-EBS1 <- subset(pac,pac$lat > 50 & pac$lat < 65  &  pac$long > -164 &
+EBS1 <- subset(pac,pac$Depth > -50 &
                  pac$ECO_REG %in% c("Eastern Bering Sea" ))
+EBS1b <- subset(pac,pac$uni == "ID_-156.81_57.68")
+EBS1 <- rbind(EBS1,EBS1b)
 points(EBS1$long,EBS1$lat ,col="green")
 
-EBS2 <- subset(pac,pac$lat > 50 & pac$lat < 65  &  pac$long < -164 &  pac$long  > -170 &
+EBS2 <- subset(pac,pac$Depth < -50 & pac$Depth > -100 &
                  pac$ECO_REG %in% c("Eastern Bering Sea" ))
 points(EBS2$long,EBS2$lat ,col="orange")
 
-EBS3 <- subset(pac,pac$lat > 50 & pac$lat < 65  &  pac$long < -170 &
+EBS3 <- subset(pac,pac$Depth < -100 &
                  pac$ECO_REG %in% c("Eastern Bering Sea" ))
 points(EBS3$long,EBS3$lat ,col="pink")
 
@@ -166,14 +169,17 @@ points(channel$long,channel$lat ,col="red")
 southNS <- subset(NEA,NEA$lat < 56.5 & NEA$lat > 52 & NEA$long < 9 & NEA$ECO_REG =="North Sea")
 points(southNS$long,southNS$lat ,col="red")
 
-northNS <- subset(NEA,NEA$lat > 56.5  & NEA$long < 9 & NEA$ECO_REG =="North Sea")
-points(northNS$long,northNS$lat ,col="green")
+northNS <- subset(NEA,NEA$lat > 56.5 & NEA$lat < 60.6 & NEA$long < 9 & 
+                  NEA$ECO_REG %in% c("North Sea","Southern Norway"))
+points(northNS$long,northNS$lat ,col="red")
 
 katskag <- subset(NEA,NEA$long > 9 & NEA$ECO_REG =="North Sea")
 points(katskag$long,katskag$lat ,col="red")
 
-Southnor <- subset(NEA,NEA$lat < 64 & NEA$ECO_REG =="Southern Norway")
-points(Southnor$long,Southnor$lat ,col="red")
+Southnor <- subset(NEA,NEA$lat < 64 & NEA$lat >59.5 &
+                     NEA$ECO_REG %in% c("North Sea","Southern Norway"))
+Southnor <- subset(Southnor,!(Southnor$uni %in% northNS$uni))
+points(Southnor$long,Southnor$lat ,col="orange")
 
 Southnor2 <- subset(NEA,NEA$lat >= 64 & NEA$ECO_REG =="Southern Norway")
 points(Southnor2$long,Southnor2$lat ,col="red")
@@ -187,22 +193,32 @@ points(Northnor1$long,Northnor1$lat ,col="green")
 Northnor2 <- subset(NEA,NEA$ECO_REG =="Northern Norway and Finnmark" & !(NEA$uni %in% Northnor1$uni))
 points(Northnor2$long,Northnor2$lat ,col="red")
 
-Barents1 <- subset(NEA,NEA$ECO_REG =="North and East Barents Sea" & NEA$lat < 73 & !(NEA$uni %in% "ID_674"))
-points(Barents1$long,Barents1$lat ,col="green")
+Barents <- subset(NEA,NEA$ECO_REG =="North and East Barents Sea")
+Barents$id <- 1:190
+#text(Barents$long,Barents$lat,Barents$id)
 
-Barents2 <- subset(NEA,NEA$ECO_REG =="North and East Barents Sea" & NEA$lat >= 73 & NEA$lat <76 & NEA$long < 28 )
-Barents2b <- subset(NEA,NEA$uni == "ID_21.92_72.89")
-Barents2 <- rbind(Barents2,Barents2b)
-points(Barents2$long,Barents2$lat ,col="red")
+# Barents_sh <- subset(NEA,NEA$ECO_REG =="North and East Barents Sea" & NEA$Depth >-200)
+# points(Barents_sh$long,Barents_sh$lat ,col="red")                     
 
-Barents3 <- subset(NEA,NEA$ECO_REG =="North and East Barents Sea" & NEA$lat >= 73 & NEA$lat <76  & NEA$long>= 28)
-points(Barents3$long,Barents3$lat ,col="red")
+# Barents_sh <- subset(NEA,NEA$ECO_REG =="North and East Barents Sea" & NEA$Depth >-250 & NEA$Depth < -200)
+# points(Barents_sh$long,Barents_sh$lat ,col="blue")
 
-Barents4 <- subset(NEA,NEA$ECO_REG =="North and East Barents Sea" & NEA$lat >= 76  & NEA$long < 28)
+# Barents_sh <- subset(NEA,NEA$ECO_REG =="North and East Barents Sea" & NEA$Depth >-350 & NEA$Depth < -250)
+# points(Barents_sh$long,Barents_sh$lat ,col="green")
+
+Barents1 <- subset(NEA,NEA$uni %in% c(Barents$uni[c(1:15,16:24,30,44,53,38,26,27,31:35,39:41,45:48,54:57)]))
+points(Barents1$long,Barents1$lat ,col="red")
+
+Barents2 <- subset(NEA,NEA$uni %in% c(Barents$uni[c(61:65,72:76,81,82,83,84,85,89,90:93,97:100,107,108,109,
+                                                    114,115,116,122,123,130,138)]))
+points(Barents2$long,Barents2$lat ,col="pink")
+
+Barents3 <- subset(NEA,NEA$uni %in% c(Barents$uni[c(25,28,36,29,37,42,43,49:52,58:60,66:71,77:80,86:88,94:96,
+                                                    101:105,110:113,117:119,124,125,126,131,132,139)]))
+points(Barents3$long,Barents3$lat ,col="orange")
+
+Barents4 <- subset(NEA,NEA$uni %in% c(Barents$uni[c(106,120,121,127:129,133:137,140:190)]))
 points(Barents4$long,Barents4$lat ,col="green")
-
-Barents5 <- subset(NEA,NEA$ECO_REG =="North and East Barents Sea" & NEA$lat >= 76  & NEA$long >= 28)
-points(Barents5$long,Barents5$lat ,col="red")
 
 grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Iberianc$uni,"Iberianc",grid_master@data$subdivision)
 grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Biscay$uni,"Biscay",grid_master@data$subdivision)
@@ -223,6 +239,5 @@ grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Barents1$uni,"B
 grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Barents2$uni,"Barents2",grid_master@data$subdivision)
 grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Barents3$uni,"Barents3",grid_master@data$subdivision)
 grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Barents4$uni,"Barents4",grid_master@data$subdivision)
-grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Barents5$uni,"Barents5",grid_master@data$subdivision)
 
 save(grid_master,file="cleaned data/surveyed_grid.RData")

@@ -3,6 +3,8 @@
 ###
 ### 
 
+library(Metrics)
+
 stock <- read.csv("cleaned data/stock assessment comparison.csv",header=T)
 colnames(stock)[23] <- "wt"
 colnames(stock)[24] <- "wt_q"
@@ -20,6 +22,9 @@ x <- c(-1,9)
 y <- coefficients(mod1)[1] + coefficients(mod1)[2]*x 
 lines(y~x,lty=5)
 
+text(6,0,"RMSE = 0.88 \n R2 = 0.61")
+
+
 #points(log10(stock$biomass[stock$toanalyze <30]),log10(stock$wt_q[stock$toanalyze <30]),col="blue",pch=16)
 
 plot(log10(stock$biomass),log10(stock$wt),xlim=c(-1,8),ylim=c(-1,8),xlab="Stock assess. biomass - log10(MT)",
@@ -30,6 +35,8 @@ mod1 <- lm(log10(stock$wt)~log10(stock$biomass))
 x <- c(-1,9)
 y <- coefficients(mod1)[1] + coefficients(mod1)[2]*x 
 lines(y~x,lty=5)
+
+text(6,0,"RMSE = 1.25 \n R2 = 0.54")
 
 dev.off()
 

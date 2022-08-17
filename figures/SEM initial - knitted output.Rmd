@@ -1,7 +1,7 @@
 ---
 title: "SEM output"
 author: "D van Denderen"
-date: "8 March 2022"
+date: "August 2022"
 output: html_document
 ---
 
@@ -15,9 +15,9 @@ SEM model is developed to analyse regional variation in demersal fish biomass. F
 
 SEM model is run for:
 
-- Two spatial units
-  * Ecoregions (n=20)
-  * Management subdivisions (n=41)
+- Two spatial scales
+  * Ecoregions (n=21)
+  * Management subdivisions (n=45)
   
 - Three time periods
   * 1990-1995
@@ -28,7 +28,7 @@ The initial model has too many predictor variables for the number of observation
 
 ```{r,echo= T,  warning = F}
 library(sp)
-library(piecewiseSEM)
+library(lavaan)
 ```
 
 Initial SEM model causal pathway is primarily based on predictor variables used in the modelling of demersal fish in a global food web setup.
@@ -39,7 +39,18 @@ Initial SEM model causal pathway is primarily based on predictor variables used 
 - higher benthic and zoopl production increase fish biomass
 ```{r, warning = F, echo= T}
 # load workspace (spatial analysis.R)
-load (file = "C:/Users/danie/Documents/Online for git/DemFish_trawl/figures/my_work_space_up.RData")
+load (file = "C:/Users/danie/Documents/Online for git/DemFish_trawl/figures/my_work_space.RData")
+
+# re-scale parameters
+semparam <- c("NPP","z_prod","biomass","tlw","SST_time","ER_log","depth","ben_prod")
+
+## hypothesized model lavaan
+modT2='biomass ~ tlw + ER_log + SST_time + z_prod + ben_prod
+       tlw ~ NPP + ER_log
+       z_prod ~ NPP +  SST_time  
+       ben_prod ~ NPP + SST_time + depth + z_prod
+       NPP ~ SST_time
+       SST_time ~~ 0*ER_log'
 
 ## minimum nb of grid cells per region
 id_min <- 6
@@ -56,16 +67,15 @@ datbio <- subset(datbio,datbio$countgrid >= id_min) # exclude regions with few g
 # get exploitation rate
 datbio$ER_log <- log10(datbio$Catch_sqkm/datbio$biomass)
 
-# piecewise SEM
-model <- psem(
-  lm(biomass ~ tlw + ER_log + SST_time + ben_prod + lz_prod, data=datbio),
-  lm(tlw ~ NPP + ER_log, data=datbio),
-  lm(lz_prod ~ NPP +  SST_time , data=datbio),
-  lm(ben_prod ~ NPP + SST_time + depth +lz_prod, data=datbio),
-  lm(NPP ~ SST_time , data=datbio),
-  datbio)
+# get total zooplankton production
+datbio$z_prod <- datbio$lz_prod + datbio$mz_prod
 
-summary(model, .progressBar = F)
+# re-scale parameters for Lavaan SEM
+datbio[,semparam] <- scale(datbio[,semparam])
+
+# SEM 
+f.modT1.est <- sem(modT2,fixed.x=F,data=datbio)
+tt1 <- summary(f.modT1.est,rsq=T,stand=T)
 
 ```
 
@@ -80,16 +90,15 @@ datbio <- subset(datbio,datbio$countgrid >= id_min) # exclude regions with few g
 # get exploitation rate
 datbio$ER_log <- log10(datbio$Catch_sqkm/datbio$biomass)
 
-# piecewise SEM
-model <- psem(
-  lm(biomass ~ tlw + SST_time  + ER_log + lz_prod + ben_prod, data=datbio),
-  lm(tlw ~ ER_log + NPP, data=datbio),
-  lm(lz_prod ~ NPP +  SST_time , data=datbio),
-  lm(ben_prod ~NPP + SST_time + depth + lz_prod, data=datbio),
-  lm(NPP ~ SST_time , data=datbio),
-  datbio)
+# get total zooplankton production
+datbio$z_prod <- datbio$lz_prod + datbio$mz_prod
 
-summary(model, .progressBar = F)
+# re-scale parameters for Lavaan SEM
+datbio[,semparam] <- scale(datbio[,semparam])
+
+# SEM 
+f.modT1.est <- sem(modT2,fixed.x=F,data=datbio)
+tt2 <- summary(f.modT1.est,rsq=T,stand=T)
 
 ```
 
@@ -103,16 +112,15 @@ datbio <- subset(datbio,datbio$countgrid >= id_min) # exclude regions with few g
 # get exploitation rate
 datbio$ER_log <- log10(datbio$Catch_sqkm/datbio$biomass)
 
-# piecewise SEM
-model <- psem(
-  lm(biomass ~ tlw + SST_time  + ER_log + lz_prod + ben_prod, data=datbio),
-  lm(tlw ~ ER_log + NPP, data=datbio),
-  lm(lz_prod ~ NPP +  SST_time , data=datbio),
-  lm(ben_prod ~NPP + SST_time + depth + lz_prod, data=datbio),
-  lm(NPP ~ SST_time , data=datbio),
-  datbio)
+# get total zooplankton production
+datbio$z_prod <- datbio$lz_prod + datbio$mz_prod
 
-summary(model, .progressBar = F)
+# re-scale parameters for Lavaan SEM
+datbio[,semparam] <- scale(datbio[,semparam])
+
+# SEM 
+f.modT1.est <- sem(modT2,fixed.x=F,data=datbio)
+tt3 <- summary(f.modT1.est,rsq=T,stand=T)
 
 ```
 
@@ -126,16 +134,15 @@ datbio <- subset(datbio,datbio$countgrid >= id_min) # exclude regions with few g
 # get exploitation rate
 datbio$ER_log <- log10(datbio$Catch_sqkm/datbio$biomass)
 
-# piecewise SEM
-model <- psem(
-  lm(biomass ~ tlw + SST_time  + ER_log + lz_prod + ben_prod, data=datbio),
-  lm(tlw ~ ER_log + NPP, data=datbio),
-  lm(lz_prod ~ NPP +  SST_time , data=datbio),
-  lm(ben_prod ~NPP + SST_time + depth + lz_prod, data=datbio),
-  lm(NPP ~ SST_time , data=datbio),
-  datbio)
+# get total zooplankton production
+datbio$z_prod <- datbio$lz_prod + datbio$mz_prod
 
-summary(model, .progressBar = F)
+# re-scale parameters for Lavaan SEM
+datbio[,semparam] <- scale(datbio[,semparam])
+
+# SEM 
+f.modT1.est <- sem(modT2,fixed.x=F,data=datbio)
+tt4 <- summary(f.modT1.est,rsq=T,stand=T)
 
 ```
 
@@ -149,16 +156,15 @@ datbio <- subset(datbio,datbio$countgrid >= id_min) # exclude regions with few g
 # get exploitation rate
 datbio$ER_log <- log10(datbio$Catch_sqkm/datbio$biomass)
 
-# piecewise SEM
-model <- psem(
-  lm(biomass ~ tlw + SST_time  + ER_log + lz_prod + ben_prod, data=datbio),
-  lm(tlw ~ ER_log + NPP, data=datbio),
-  lm(lz_prod ~ NPP +  SST_time , data=datbio),
-  lm(ben_prod ~NPP + SST_time + depth + lz_prod, data=datbio),
-  lm(NPP ~ SST_time , data=datbio),
-  datbio)
+# get total zooplankton production
+datbio$z_prod <- datbio$lz_prod + datbio$mz_prod
 
-summary(model, .progressBar = F)
+# re-scale parameters for Lavaan SEM
+datbio[,semparam] <- scale(datbio[,semparam])
+
+# SEM 
+f.modT1.est <- sem(modT2,fixed.x=F,data=datbio)
+tt5 <- summary(f.modT1.est,rsq=T,stand=T)
 
 ```
 
@@ -172,19 +178,18 @@ datbio <- subset(datbio,datbio$countgrid >= id_min) # exclude regions with few g
 # get exploitation rate
 datbio$ER_log <- log10(datbio$Catch_sqkm/datbio$biomass)
 
-# piecewise SEM
-model <- psem(
-  lm(biomass ~ tlw + SST_time  + ER_log + lz_prod + ben_prod, data=datbio),
-  lm(tlw ~ ER_log + NPP, data=datbio),
-  lm(lz_prod ~ NPP +  SST_time , data=datbio),
-  lm(ben_prod ~NPP + SST_time + depth + lz_prod, data=datbio),
-  lm(NPP ~ SST_time , data=datbio),
-  datbio)
+# get total zooplankton production
+datbio$z_prod <- datbio$lz_prod + datbio$mz_prod
 
-summary(model, .progressBar = F)
+# re-scale parameters for Lavaan SEM
+datbio[,semparam] <- scale(datbio[,semparam])
+
+# SEM 
+f.modT1.est <- sem(modT2,fixed.x=F,data=datbio)
+tt6 <- summary(f.modT1.est,rsq=T,stand=T)
 ```
 
-Results show that the benthic flux to biomass is 6/6 times non-significant. Re-doing the analysis for the entire time series generally supports the above findings (trophic level is now not very important). Final model is simplified and  depth and detrital bottom flux are excluded.  
+Results show that the benthic flux to biomass is 6/6 times non-significant. Re-doing the analysis for the entire time series (see below) supports these findings (note that trophic level is now not very important). Final model is simplified and  depth and detrital bottom flux are excluded.  
 
 **Subdivision, 1990-2015**
 
@@ -196,16 +201,15 @@ datbio <- subset(datbio,datbio$countgrid >= id_min) # exclude regions with few g
 # get exploitation rate
 datbio$ER_log <- log10(datbio$Catch_sqkm/datbio$biomass)
 
-# piecewise SEM
-model <- psem(
-  lm(biomass ~ tlw + ER_log + SST_time + ben_prod + lz_prod, data=datbio),
-  lm(tlw ~ NPP + ER_log, data=datbio),
-  lm(lz_prod ~ NPP +  SST_time , data=datbio),
-  lm(ben_prod ~ NPP + SST_time + depth +lz_prod, data=datbio),
-  lm(NPP ~ SST_time , data=datbio),
-  datbio)
+# get total zooplankton production
+datbio$z_prod <- datbio$lz_prod + datbio$mz_prod
 
-summary(model, .progressBar = F)
+# re-scale parameters for Lavaan SEM
+datbio[,semparam] <- scale(datbio[,semparam])
+
+# SEM 
+f.modT1.est <- sem(modT2,fixed.x=F,data=datbio)
+tt7 <- summary(f.modT1.est,rsq=T,stand=T)
 
 ```
 
@@ -219,15 +223,15 @@ datbio <- subset(datbio,datbio$countgrid >= id_min) # exclude regions with few g
 # get exploitation rate
 datbio$ER_log <- log10(datbio$Catch_sqkm/datbio$biomass)
 
-# piecewise SEM
-model <- psem(
-  lm(biomass ~ tlw + SST_time  + ER_log + lz_prod + ben_prod, data=datbio),
-  lm(tlw ~ ER_log + NPP, data=datbio),
-  lm(lz_prod ~ NPP +  SST_time , data=datbio),
-  lm(ben_prod ~NPP + SST_time + depth + lz_prod, data=datbio),
-  lm(NPP ~ SST_time , data=datbio),
-  datbio)
+# get total zooplankton production
+datbio$z_prod <- datbio$lz_prod + datbio$mz_prod
 
-summary(model, .progressBar = F)
+# re-scale parameters for Lavaan SEM
+datbio[,semparam] <- scale(datbio[,semparam])
+
+# SEM 
+f.modT1.est <- sem(modT2,fixed.x=F,data=datbio)
+tt8 <- summary(f.modT1.est,rsq=T,stand=T)
+
 
 ```

@@ -290,20 +290,53 @@ coordymap <- round(seq(minlat,maxlat,length.out = 4))
     scale_y_continuous(breaks=coordymap) + geom_point(data=dat,aes(x=ShootLong,y=ShootLat),size=0.25) 
  
  #### now get norwegian surveys
- load("cleaned data/NORBTS10Aug_withq.RData")
+ load("cleaned data/NORBTSJuly2022_withq.RData")
+ norw   <- norw_dat
  
- dat <- norw_dat
- dat <- dat[!duplicated(dat$HaulID), ]
+ # rename corrected data based on gear efficiency q's
+ colnames(norw)[which(names(norw)=="wgtlencpue_q")] <- "wtcpue_q" 
+ colnames(norw)[which(names(norw)=="wgtlenh_q")]    <- "wgth_q"
  
- minlong <- min(dat$ShootLong)-5
- maxlong <- max(dat$ShootLong)+5
- minlat  <- min(dat$ShootLat)-5
- maxlat  <- max(dat$ShootLat)+5
+ # get for all unreported weights, weight based on length
+ # (not used in the analysis as it based on q corrected weights following length-classes
+ norw$wgth   <- ifelse(is.na(norw$wgth),norw$wgtlenh,norw$wgth)
+ norw$wtcpue <- ifelse(is.na(norw$wtcpue),norw$wgtlencpue,norw$wtcpue)
+ 
+ # some species had no length information but wtcpue is available
+ geareff <- read.csv(file = "data/Walkeretal_2017_supp/EfficiencyTab.csv",sep=",",header = T)
+ norw <- cbind(norw,geareff[match(norw$Code,geareff$Code),c("Group")])
+ norw$Code <- norw[,ncol(norw)]; norw <- norw[,-(ncol(norw))]
+ 
+ norw$wtcpue_q <- ifelse(is.na(norw$wtcpue_q) & norw$Code =="GRP1", norw$wtcpue /0.01856618,norw$wtcpue_q)
+ norw$wtcpue_q <- ifelse(is.na(norw$wtcpue_q) & norw$Code =="GRP2", norw$wtcpue /0.22182677,norw$wtcpue_q)
+ norw$wtcpue_q <- ifelse(is.na(norw$wtcpue_q) & norw$Code =="GRP3", norw$wtcpue /0.29919480,norw$wtcpue_q)
+ norw$wtcpue_q <- ifelse(is.na(norw$wtcpue_q) & norw$Code =="GRP4", norw$wtcpue /0.39701479,norw$wtcpue_q)
+ norw$wtcpue_q <- ifelse(is.na(norw$wtcpue_q) & norw$Code =="GRP5", norw$wtcpue /0.25488862,norw$wtcpue_q)
+ norw$wtcpue_q <- ifelse(is.na(norw$wtcpue_q) & norw$Code =="GRP6", norw$wtcpue /0.22871213,norw$wtcpue_q)
+ norw$wtcpue_q <- ifelse(is.na(norw$wtcpue_q) & norw$Code =="GRP7", norw$wtcpue /0.30596754,norw$wtcpue_q)
+ 
+ # remove hauls where cpue data is not available (note: many hauls before 1989)
+ noCpue <- subset(norw,norw$wgth >0 & is.na(norw$wtcpue))
+ noCpue <- unique(noCpue$HaulID)
+ 
+ # remove all within shallow North Sea - already (partly) included in DATRAS
+ norinNS <- subset(norw,norw$ShootLat < 61.89 & norw$Depth <200)
+ norinNS <- unique(norinNS$HaulID)
+ 
+ norw <- norw %>%
+   filter(!(HaulID %in% c(noCpue,norinNS))) %>%
+   dplyr::select(HaulID,Survey,Gear,Year,Month,ShootLong,ShootLat,Area.swept,Depth,Family,Species,wgth,wtcpue,wgth_q,wtcpue_q) 
+ 
+ 
+ minlong <- min(norw$ShootLong)-5
+ maxlong <- max(norw$ShootLong)+5
+ minlat  <- min(norw$ShootLat)-5
+ maxlat  <- max(norw$ShootLat)+5
  coordslim <- c(minlong,maxlong,minlat,maxlat)
  coordxmap <- round(seq(minlong,maxlong,length.out = 4))
  coordymap <- round(seq(minlat,maxlat,length.out = 4))
  
  figmap +  coord_sf(xlim = c(minlong, maxlong), ylim = c(minlat, maxlat)) +
     scale_x_continuous(breaks=coordxmap)  +
-    scale_y_continuous(breaks=coordymap) + geom_point(data=ns,aes(x=ShootLong,y=ShootLat),size=0.25) 
+    scale_y_continuous(breaks=coordymap) + geom_point(data=norw,aes(x=ShootLong,y=ShootLat),size=0.25) 
  

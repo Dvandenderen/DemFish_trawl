@@ -1,200 +1,369 @@
 
-load("cleaned data/timeseries_Jeremy.RData")
-full <- tt
+rm(list=ls())
 
 library(lattice)
 library(dplyr)
 library(nlme)
 
-### plot timeseries per region
-  lattice::xyplot(tt$Bio_kgsqkm ~ tt$Year | tt$ECO_REG, col = 1, type="o")
+# -------------------------------------------------------------------------------
+# load grid cell time series and estimate the average per ecoregion and year
+# -------------------------------------------------------------------------------
 
-### simplify data and column names
-  tt <- tt[,1:9]
-  colnames(tt) <- c("Region","Year","Area_sqkm","Bio","tl","Catch","uni","SST","ER")
+ load("cleaned data/Biomass_timeseries_grid.RData")
+ cpue_good <- subset(cpue_good,cpue_good$year %in% c(1980:2015))
+
+ # get weighted mean based on size of ocean area
+ cpue_good[,c(3,4,8,10,11)]  <- cpue_good[,c(3,4,8,10,11)] * cpue_good$ocean_sqkm # weighted with the size of the ocean area
+ tt           <-  aggregate(list(cpue_good[,c(7,3,4,8,10,11)]),
+                        by=list(cpue_good$ECO_REG,cpue_good$year),FUN=sum,na.rm=T)
+ cnam         <- colnames(cpue_good[,c(7,3,4,8,10,11)])
+ colnames(tt) <- c("ECO_REG","year",cnam)
+ tt[,4:8]     <- tt[,4:8]/tt$ocean_sqkm
+
+# -------------------------------------------------------------------------------
+# add biomass smoother
+# -------------------------------------------------------------------------------
+ ecreg <- unique(tt$ECO_REG)
+ full  <- c()
+ for (j in 1:21){
+   tnew       <- subset(tt,tt$ECO_REG == ecreg[j])
+   if(j %in% c(19,21)){TBsmooth  <- smooth.spline(tnew$year, tnew$biomass, cv = TRUE)
+   } else {TBsmooth  <- smooth.spline(tnew$year, tnew$biomass, cv = TRUE, nknots=round(nrow(tnew)/3))}
+   Yfine      <- unique(tnew$year)
+   tnew$Bio_s <- predict(TBsmooth, Yfine)$y
+   full       <- rbind(full,tnew)
+ }
+
+ tt      <- full
+ tt$ER   <- tt$Catch/tt$biomass 
+ tt$ER_s <- tt$Catch/tt$Bio_s 
+ 
+# -------------------------------------------------------------------------------
+# plot timeseries per region
+# -------------------------------------------------------------------------------
+
+  lattice::xyplot(tt$biomass ~ tt$year | tt$ECO_REG, col = 1, type="o")
+  lattice::xyplot(tt$Bio_s ~ tt$year | tt$ECO_REG, col = 1, type="o")
+
+# -------------------------------------------------------------------------------
+# prepare data for model fitting
+# -------------------------------------------------------------------------------
+
+  # simplify data and column names
+  colnames(tt)[c(1,2,4)] <- c("Region","Year","Bio")
   
-### get biomass in the next year
+  # get biomass in the next year
   tt <- tt[order(tt$Region, tt$Year),]
   tt <- tt %>% group_by(Region) %>% 
-                mutate(Bio_1y = lead(Bio ,1))
+                mutate(Bio_1y   = lead(Bio ,1),
+                       Bio_1y_s = lead(Bio_s ,1))
   tt <- tt[complete.cases(tt$Bio_1y), ]
   
 ### get production, and standardize output to make it easier to fit
-  tt$Prod <- tt$Bio_1y - tt$Bio + tt$Catch
-  tt <-  tt %>% group_by(Region) %>% 
-           mutate(Prod_sd = Prod/max(Bio),
-           Bio_sd  = Bio/max(Bio),
-           Bio_1y_sd  = Bio_1y/max(Bio),
-           Catch_sd = Catch/max(Bio),
-           SST_sd  = SST - mean(SST))
+  tt$Prod   <- tt$Bio_1y   - tt$Bio   + tt$Bio*tt$ER
+  tt$Prod_s <- tt$Bio_1y_s - tt$Bio_s + tt$Bio*tt$ER
+  tt        <-  tt %>% group_by(Region) %>% 
+                   mutate(Prod     = Prod     / max(Bio),
+                          Prod_s   = Prod_s   / max(Bio_s),
+                          Bio_1y   = Bio_1y   / max(Bio),
+                          Bio_1y_s = Bio_1y_s / max(Bio_s),
+                          Bio      = Bio      / max(Bio),
+                          Bio_s    = Bio_s    / max(Bio_s),
+                          SST      = SST - mean(SST))
   tt <- as.data.frame(tt)
+  tt$Catch   <- tt$ER *tt$Bio
+  tt$Catch_s <- tt$ER_s * tt$Bio_s
+# -------------------------------------------------------------------------------
+# fit recursive biomass model + additive error term
+# -------------------------------------------------------------------------------
   
-### not all regions have the same years, some regions have gaps - ignored
+  # not all regions have the same years, some regions have gaps - ignored
   # but note that regions with nice time series do give the same result
   
+  # model specification
+  trcFunc <- function(SST,Bio,Catch,a,g,theta){
+                     (a + theta*SST + g* Bio )* Bio  - Catch}
   
-### fit model Jeremy
-  trcFunc <- function(SST_sd,Bio_sd,Catch_sd,a,g,theta){
-    ((1+ a + theta*SST_sd + g* Bio_sd )* Bio_sd  - Catch_sd)}
+  # fit to obtain starting parameter for mixed model
+  mfit   <- nls(Bio_1y ~ trcFunc(SST,Bio,Catch,a,g,theta),
+                         start=list(a=1,g=1,theta=0.1),data = tt)
   
-  # fit easy model to obtain starting parameter for mixed model
-  mfit <- nls(Bio_1y_sd~trcFunc(SST_sd,Bio_sd,Catch_sd,a,g,theta),
-                                    start=list(a=1,g=1,theta=0.1),data = tt)
+  p30 = nlme(Bio_1y ~ trcFunc(SST,Bio,Catch,a,g,theta),
+             random = a ~ 1|Region,
+             fixed  = a+theta+g ~ 1,
+             data   = tt,
+             start  = coef(mfit),
+             control=(msMaxIter=10^10))
   
-  p30 = nlme(Bio_1y_sd ~ trcFunc(SST_sd,Bio_sd,Catch_sd,a,g,theta),
+  summary(p30) # no indication that theta is important 
+  
+  # model specification
+  trcFunc <- function(Bio,Catch,a,g){
+    (a + g* Bio )* Bio  - Catch}
+  
+  # fit to obtain starting parameter for mixed model
+  mfit   <- nls(Bio_1y ~ trcFunc(Bio,Catch,a,g),
+                start=list(a=1,g=1),data = tt)
+  
+  p31 = nlme(Bio_1y ~ trcFunc(Bio,Catch,a,g),
+             random = a ~ 1|Region,
+             fixed  = a+g ~ 1,
+             data   = tt,
+             start  = coef(mfit),
+             control=(msMaxIter=10^10))
+  
+  AIC(p30)-AIC(p31)
+
+# -------------------------------------------------------------------------------
+# fit recursive biomass model + additive error term - smoothed biomass
+# -------------------------------------------------------------------------------
+
+  # model specification
+  trcFunc <- function(SST,Bio_s,Catch_s,a,g,theta){
+    (a + theta*SST + g* Bio_s )* Bio_s  - Catch_s}
+  
+  # fit to obtain starting parameter for mixed model
+  mfit   <- nls(Bio_1y_s ~ trcFunc(SST ,Bio_s,Catch_s,a,g,theta),
+                start=list(a=1,g=1,theta=0.1),data = tt)
+  
+  p30 = nlme(Bio_1y_s ~ trcFunc(SST,Bio_s,Catch_s,a,g,theta),
+             random = a ~ 1|Region,
+             fixed  = a+theta+g ~ 1,
+             data   = tt,
+             start  = coef(mfit),
+             control=(msMaxIter=10^10))
+  
+  summary(p30) # no indication that theta is important  
+
+# -------------------------------------------------------------------------------
+# fit recursive biomass model + multiplicative error term
+# -------------------------------------------------------------------------------
+  trcFunc <- function(SST, Bio, ER, a, g, theta){
+    log(a - g * Bio - ER) + log(Bio) + theta*SST  }
+  
+  # fit to obtain starting parameter for mixed model
+  mfit <- nls(log(Bio_1y) ~ trcFunc(SST,Bio,ER,a,g,theta),
+              start=list(a=1,g=.1,theta=0.1),data = tt)
+  
+  p30 = nlme(log(Bio_1y) ~ trcFunc(SST,Bio,ER,a,g,theta),
+             random = a ~ 1|Region,
+             fixed = a+theta+g ~ 1,
+             data = tt,
+             start = c(0.8,coef(mfit)[2:3]),
+             control=(msMaxIter=10^10))  
+  
+  summary(p30) # no indication that theta is important 
+  
+  trcFunc <- function(Bio, ER, a, g){
+    log(a - g * Bio - ER) + log(Bio) }
+  
+  # fit to obtain starting parameter for mixed model
+  mfit <- nls(log(Bio_1y) ~ trcFunc(Bio,ER,a,g),
+              start=list(a=1,g=.1),data = tt)
+  
+  p31 = nlme(log(Bio_1y) ~ trcFunc(Bio,ER,a,g),
+             random = a ~ 1|Region,
+             fixed = a+g ~ 1,
+             data = tt,
+             start = c(0.8,coef(mfit)[2]),
+             control=(msMaxIter=10^10))  
+  
+  AIC(p30)-AIC(p31)
+  
+  
+# -------------------------------------------------------------------------------
+# fit recursive biomass model + multiplicative error term - smoothed biomass
+# -------------------------------------------------------------------------------
+
+  trcFunc <- function(SST, Bio_s, ER_s, a, g, theta){
+    log(a - g * Bio_s - ER_s) + log(Bio_s) + theta*SST  }
+  
+  # fit to obtain starting parameter for mixed model
+  mfit <- nls(log(Bio_1y_s) ~ trcFunc(SST,Bio_s,ER_s,a,g,theta),
+              start=list(a=1,g=.1,theta=0.1),data = tt)
+  
+  p30 = nlme(log(Bio_1y) ~ trcFunc(SST,Bio_s,ER_s,a,g,theta),
+             random = a ~ 1|Region,
+             fixed = a+theta+g ~ 1,
+             data = tt,
+             start = c(0.8,coef(mfit)[2:3]),
+             control=(msMaxIter=10^10))  
+  
+  summary(p30) # no indication that theta is important 
+  
+# -------------------------------------------------------------------------------
+# fit "ricker" model + multiplicative error term
+# -------------------------------------------------------------------------------
+  
+  trcFunc <- function(SST,Bio,ER,a,g,theta){
+    log(Bio) + a +  theta*SST - g*Bio - log(1-ER) }
+  
+  # fit to obtain starting parameter for mixed model
+  mfit <- nls(log(Bio_1y) ~ trcFunc(SST,Bio,ER,a,g,theta),
+              start=list(a=0.1,g=.1,theta=0.1),data = tt)
+  
+  p30 = nlme(log(Bio_1y) ~ trcFunc(SST,Bio,ER,a,g,theta),
+             random = a+g ~ 1|Region,
+             fixed = a+theta+g ~ 1,
+             data = tt,
+             start = coef(mfit),
+             control=(msMaxIter=10^10))
+  
+  summary(p30) # theta is not important
+  
+  trcFunc <- function(Bio,ER,a,g){
+    log(Bio) + a - g*Bio - log(1-ER) }
+  
+  # fit to obtain starting parameter for mixed model
+  mfit <- nls(log(Bio_1y) ~ trcFunc(Bio,ER,a,g),
+              start=list(a=0.1,g=.1),data = tt)
+  
+  p31 = nlme(log(Bio_1y) ~ trcFunc(Bio,ER,a,g),
+             random = a+g ~ 1|Region,
+             fixed = a+g ~ 1,
+             data = tt,
+             start = coef(mfit),
+             control=(msMaxIter=10^10))
+  
+  AIC(p30)-AIC(p31)
+# -------------------------------------------------------------------------------
+# fit "ricker" model + multiplicative error term - smoothed biomass
+# -------------------------------------------------------------------------------
+  
+  trcFunc <- function(SST,Bio_s,ER_s,a,g,theta){
+    log(Bio_s) + a +  theta*SST - g*Bio_s - log(1-ER_s) }
+  
+  # fit to obtain starting parameter for mixed model
+  mfit <- nls(log(Bio_1y_s) ~ trcFunc(SST,Bio_s,ER_s,a,g,theta),
+              start=list(a=0.1,g=.1,theta=0.1),data = tt)
+  
+  p30 = nlme(log(Bio_1y_s) ~ trcFunc(SST,Bio_s,ER_s,a,g,theta),
              random = a ~ 1|Region,
              fixed = a+theta+g ~ 1,
              data = tt,
              start = coef(mfit),
              control=(msMaxIter=10^10))
   
-  summary(p30) # no indication that theta is important 
-  #ranef(p30)   # random temp effect is very small
+  summary(p30) # theta is important
   
-  trcFunc <- function(Bio_sd,Catch_sd,a,g){
-        ((1+ a + g* Bio_sd )* Bio_sd  - Catch_sd)}
+# -------------------------------------------------------------------------------
+# fit logistic growth model + additive error term 
+# based on Free et al. 2019 - Impacts of historical warming on marine fisheries production
+# ------------------------------------------------------------------------------- 
   
-  # fit easy model to obtain starting parameter for mixed model
-  mfit <- nls(Bio_1y_sd~trcFunc(Bio_sd,Catch_sd,a,g),
-              start=list(a=1,g=1),data = tt)
+  trcFunc <- function(Bio,SST,r,K,theta){
+    (r*Bio*(1-Bio/K) * exp(SST * theta))}
   
-  p31 = nlme(Bio_1y_sd ~ trcFunc(Bio_sd,Catch_sd,a,g),
-             random = a ~ 1|Region,
-             fixed = a+g ~ 1,
-             data = tt,
-             start = coef(mfit),
-             control=(msMaxIter=10^10))
+  mfitT <- nls(Prod ~ trcFunc(Bio,SST,r,K,theta),
+               start=list(r=1,K=.1,theta=0),data = tt) 
   
-  summary(p31) # no indication that theta is important 
-
-  
-### fit model with carrying capacity term
-  # based on Free et al. 2019 - Impacts of historical warming on marine fisheries production
-  # note without the exp() I get issues with initial parameter estimates
-  trcFunc <- function(Bio_sd,r,K){
-    (r*Bio_sd*(1-Bio_sd/K))}
-  
-  mfit <- nls(Prod_sd~trcFunc(Bio_sd,r,K),
-              start=list(r=1,K=.1),data = tt) 
-  
-  rand <- nlme(Prod_sd ~ trcFunc(Bio_sd,r,K),
-                random = r ~ 1|Region , # r and K as random effect gives lowest AIC
-                fixed = r+K ~ 1,
-                data = tt,
-                start = coef(mfit),
-                control=(msMaxIter=10^12))
-  
-  rand2 <- nlme(Prod_sd ~ trcFunc(Bio_sd,r,K),
-                random = K ~ 1|Region , # r and K as random effect gives lowest AIC
-                fixed = r+K ~ 1,
-                data = tt,
-                start = coef(mfit),
-                control=(msMaxIter=10^12))
-  
-  rand3 <- nlme(Prod_sd ~ trcFunc(Bio_sd,r,K),
-               random = r+K ~ 1|Region , # r and K as random effect gives lowest AIC
-               fixed = r+K ~ 1,
-               data = tt,
-               start = coef(mfit),
-               control=(msMaxIter=10^12))
-
-  trcFunc <- function(Bio_sd,SST_sd,r,K,theta){
-    (r*Bio_sd*(1-Bio_sd/K) * exp(SST_sd * theta))}
-  
-  mfitT <- nls(Prod_sd~trcFunc(Bio_sd,SST_sd,r,K,theta),
-              start=list(r=1,K=.1,theta=0),data = tt) 
-  
-  fixT <- nlme(Prod_sd ~ trcFunc(Bio_sd,SST_sd,r,K,theta),
-             random = r+K ~ 1|Region , # r and K as random effect gives lowest AIC
-             fixed = r+K+theta ~ 1,
-             data = tt,
-             start = coef(mfitT),
-             control=(msMaxIter=10^12))
-  
-  randT <- nlme(Prod_sd ~ trcFunc(Bio_sd,SST_sd,r,K,theta),
-               random = theta ~ 1|Region , # r and K as random effect gives lowest AIC
+  p30 <- nlme(Prod ~ trcFunc(Bio,SST,r,K,theta),
+               random = r ~ 1|Region , # r and K as random effect gives lowest AIC
                fixed = r+K+theta ~ 1,
                data = tt,
                start = coef(mfitT),
                control=(msMaxIter=10^12))
   
-  coef(p30)
+  summary(p30) # no indication that theta is important 
   
-  # could consider to add temporal auto on top (lower AIC, but no differences)
-  #p31 = nlme(Prod_sd ~ trcFunc(Bio_sd,SST_sd,r,K,theta),
-  #           random = r + K  ~ 1|Region , # r and K as random effect gives lowest AIC
-  #           fixed = r+K+theta ~ 1,
-  #           data = tt,
-  #           start = coef(mfit),
-  #           control=(msMaxIter=10^12),correlation = corARMA(c(0.1),p=1,q=0,form=~1 | Region))
+  trcFunc <- function(Bio,r,K){
+    (r*Bio*(1-Bio/K))}
   
-## fit model with semi-chemostat type of setup (almost the same as previous)
-  trcFunc <- function(Bio_sd,SST_sd,r,K,theta){
-    (r*(K-Bio_sd) * exp(SST_sd * theta))}
+  mfitT <- nls(Prod ~ trcFunc(Bio,r,K),
+               start=list(r=1,K=.1),data = tt) 
   
-  mfit <- nls(Prod_sd~trcFunc(Bio_sd,SST_sd,r,K,theta),
-              start=list(r=1,K=.1,theta=0),data = tt)
+  p31 <- nlme(Prod ~ trcFunc(Bio,r,K),
+               random = r ~ 1|Region , # r and K as random effect gives lowest AIC
+               fixed = r+K ~ 1,
+               data = tt,
+               start = coef(mfitT),
+               control=(msMaxIter=10^12))
   
-  p30 = nlme(Prod_sd ~ trcFunc(Bio_sd,SST_sd,r,K,theta),
-             random = r + K ~ 1|Region , # r and K random gives lowest AIC
-             fixed = r+K+theta ~ 1,
-             data = tt,
-             start = coef(mfit),
-             control=(msMaxIter=10^12))
-  summary(p30)  
-  coef(p30)
+  AIC(p30)-AIC(p31)
   
-### so why do we get temperature effect in statistical model? 
-  # fit the full model from previous analysis
-  # fishing effect within/across regions is the same so we can use the actual observation
-  # trophic level did not have any importance
+# -------------------------------------------------------------------------------
+# fit logistic growth model + additive error term - smoothed biomass
+# based on Free et al. 2019 - Impacts of historical warming on marine fisheries production
+# ------------------------------------------------------------------------------- 
   
-  statdat <- full[,c(1,2,4,8:16)]
-  colnames(statdat) <- c("Region","Year","Bio","SST","ER","LER","tl_across",
-                         "SST_across", "LER_across", "tl_within", "SST_within", "LER_within")
+  trcFunc <- function(Bio_s,SST,r,K,theta){
+    (r*Bio_s*(1-Bio_s/K) * exp(SST * theta))}
   
-  cs1 <- corARMA(c(0.1,0.1), p = 2, q = 0,form =~ 1|Region) # this "form" ignores years without data
-
-  fit_cor <- lme(Bio ~ SST_within + SST_across +  LER , 
-                  random= ~ 1 + SST_within|Region, correlation=cs1, data=statdat)
+  mfitT <- nls(Prod_s ~ trcFunc(Bio_s,SST,r,K,theta),
+               start=list(r=1,K=.1,theta=0),data = tt) 
   
-  # ACF takes into account groupings (Region)
-  plot(ACF(fit_cor), alpha = 0.05) #  not pretty 
-  coef(fit_cor)
+  fixT <- nlme(Prod_s ~ trcFunc(Bio_s,SST,r,K,theta),
+               random = K ~ 1|Region , # r and K as random effect gives lowest AIC
+               fixed = r+K+theta ~ 1,
+               data = tt,
+               start = coef(mfitT),
+               control=(msMaxIter=10^12))
   
-  # compare with model without correlation
-  fit_nocor <- update(fit_cor,correlation=NULL)
-  plot(ACF(fit_nocor), alpha = 0.05)
+  summary(fixT) # theta is important 
   
-  anova(fit_cor,fit_nocor) # fit_cor is here the "better" model
+# -------------------------------------------------------------------------------
+# fit logistic growth model + additive error term
+# temperature effect only affects carrying capacity
+# ------------------------------------------------------------------------------- 
   
-  # what happens if we use the standardized biomass and temp estimates
-  # temperature effect seems to disappear -- no indication of random SST_sd slope 
-  # note: random SST_sd slope model with LER gives convergence errors (but works with ER) 
-  cs1 <- corARMA(c(0.7,0.1), p = 2, q = 0,form =~ 1|Region) 
+  trcFunc <- function(Bio,SST,r,K,theta){
+    (r*Bio*(1-Bio/(K * exp(SST * theta))))}
   
-  tt$LER <- log10(tt$Catch_sd/tt$Bio_sd)
-  fit_cor_st <- lme(Bio_sd  ~ SST_sd +  LER , 
-                 random= ~ 1|Region, correlation=cs1, data=tt)
+  mfitT <- nls(Prod ~ trcFunc(Bio,SST,r,K,theta),
+               start=list(r=1,K=.1,theta=0),data = tt) 
   
-  plot(ACF(fit_cor_st), alpha = 0.05)
+  p30 <- nlme(Prod ~ trcFunc(Bio,SST,r,K,theta),
+               random = r ~ 1|Region , # r and K as random effect gives lowest AIC
+               fixed = r+K+theta ~ 1,
+               data = tt,
+               start = coef(mfitT),
+               control=(msMaxIter=10^12))
   
-  #### let's look at a region with a strong temp effect -- Eastern Bering Sea
-  EBS <- subset(tt,tt$Region =="Eastern Bering Sea")
-  par(mfrow=c(1,2))
-  plot(EBS$Bio_sd~EBS$SST,xlab="SST(i)",ylab="Bio(i)",las=1,main="Eastern Ber. Sea")
-  plot(EBS$Bio_1y_sd~EBS$Bio_sd,ylab="Bio(i+1)",xlab="Bio(i)",las=1,main="Eastern Ber. Sea") 
+  summary(p30) # no indication that theta is important  
   
-  # what happens if we fit this data - both type of models
-  trcFunc <- function(SST_sd,Bio_sd,Catch_sd,a,g,theta){
-    ((1+ a + SST_sd * theta + g* Bio_sd )* Bio_sd  - Catch_sd)}
+  trcFunc <- function(Bio,r,K){
+    (r*Bio*(1-Bio/K))}
   
-  mfit <- nls(Bio_1y_sd~trcFunc(SST_sd,Bio_sd,Catch_sd,a,g,theta),
-              start=list(a=1,g=1,theta=0.1),data = EBS)
-  acf(residuals(mfit))
+  mfitT <- nls(Prod ~ trcFunc(Bio,r,K),
+               start=list(r=1,K=.1),data = tt) 
   
-  EBS$LER <- log10(EBS$ER)
-  fit_EBS <- gls(Bio_sd  ~ SST_sd +  LER , 
-                    correlation= corAR1(), data=EBS)
-  acf(residuals(fit_EBS))
+  p31 <- nlme(Prod ~ trcFunc(Bio,r,K),
+               random = r ~ 1|Region , # r and K as random effect gives lowest AIC
+               fixed = r+K ~ 1,
+               data = tt,
+               start = coef(mfitT),
+               control=(msMaxIter=10^12))
+  
+  AIC(p30)-AIC(p31)
+  
+# -------------------------------------------------------------------------------
+# fit logistic growth model + additive error term - smoothed biomass
+# temperature effect only affects carrying capacity
+# ------------------------------------------------------------------------------- 
+  
+  trcFunc <- function(Bio_s,SST,r,K,theta){
+    (r*Bio_s*(1-Bio_s/(K * exp(SST * theta))))}
+  
+  mfitT <- nls(Prod_s ~ trcFunc(Bio_s,SST,r,K,theta),
+               start=list(r=1,K=.1,theta=0),data = tt) 
+  
+  fixT <- nlme(Prod_s ~ trcFunc(Bio_s,SST,r,K,theta),
+               random = r ~ 1|Region , # r and K as random effect gives lowest AIC
+               fixed = r+K+theta ~ 1,
+               data = tt,
+               start = coef(mfitT),
+               control=(msMaxIter=10^12))
+  
+  summary(fixT) # no indication that theta is important 
+  
+  
+# -------------------------------------------------------------------------------
+# verify some of the results
+# -------------------------------------------------------------------------------   
+  
+  tt <- subset(tt,!(tt$ECO_REG %in% c("Aleutian Island","Northern California",
+                                      "Oregon, Washington, Vancouver Coast and Shelf",
+                                      "Southern California Bight",
+                                      "North American Pacific Fijordland")))
+  
   

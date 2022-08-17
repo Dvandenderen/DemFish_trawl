@@ -362,14 +362,16 @@ cleanspl <- function(name){
 }
 sp_list$species.cleaned <- cleanspl(sp_list$species)
 sp_list$species.cleaned <- cleanspl(sp_list$species.cleaned)
+sp_list$speciesurl <- gsub(" ", "+",sp_list$species)
 
 # Creating a for loop that check each species names with WoRMS and returns aphiaID to a new column in the species list
 sp_list$aphiaID <- NA
 for(i in 1:length(unique(sp_list$species.cleaned))){
   print(i)
-  y <- sp_list[i,1]
+  y <- sp_list[i,3]
   sp_list$aphiaID[i] <- tryCatch(as.data.frame(wm_name2id(name = y)), error=function(err) NA)
 }
+sp_list <- sp_list[,-3]
 
 sp_list$aphiaID <- as.character(sp_list$aphiaID)
 #setwd('C:/Users/auma/Documents/PhD DTU Aqua/(iv) Clean surveys/2. Clean taxonomy')
@@ -404,10 +406,15 @@ aphia_list <- c(sp_list$aphiaID)
 aphia_list <- aphia_list[!duplicated(aphia_list)]
 
 # creating taxonomy tables for each species
-my_sp_taxo <- wm_record_(id = aphia_list)
+my_sp_taxo <- rbind(wm_record(aphia_list[1:50]),wm_record(aphia_list[51:100]),
+                    wm_record(aphia_list[101:150]),wm_record(aphia_list[151:200]),
+                    wm_record(aphia_list[201:250]),wm_record(aphia_list[251:300]),
+                    wm_record(aphia_list[301:350]),wm_record(aphia_list[351:400]),
+                    wm_record(aphia_list[401:450]),wm_record(aphia_list[451:500]),
+                    wm_record(aphia_list[501:550]),wm_record(aphia_list[551:572]))
 
 # row binds all the results and pass to data frame. 
-df_test <- data.frame(do.call(rbind, my_sp_taxo))
+df_test <- data.frame(my_sp_taxo)
 df_test$url <- df_test$lsid <- df_test$citation <- NULL
 df_test$isExtinct <- df_test$modified <- df_test$valid_authority <- df_test$unacceptreason <- NULL
 df_test$authority <- df_test$status <- df_test$taxonRankID <- df_test$isBrackish <- df_test$isFreshwater <- df_test$isTerrestrial <- df_test$match_type <- NULL
@@ -460,6 +467,7 @@ rm(df_test, keep_sp, keep, keep_ap,keep_fa,keep_gen, my_sp_taxo, norw_dat0, sp_l
 rm(check.sub.w, check.sum, clean.names, sum.na, sum.pos, times)
 rm(i, aphia_list, kk, kkk, Max, Min, y, cleanspl, kkkk,pred0,lm0,nor,nor2)
 
+#save(norw_dat, file='cleaned data/NORBTSJuly2022_intermediate.RData')
 ##########################################################################################
 #### RE-CALCULATE WEIGHTS based on L x W relationship
 ##########################################################################################
@@ -533,22 +541,15 @@ list.taxa <- norw_dat %>%
 #write.csv(data.frame(list.taxa), file="traits and species/taxa.NorwDat.FB.tofill.csv", row.names=FALSE)
 
 # 2. re-calculate weights with length-weight relationships
-datalw <- read.csv('traits and species/taxa.NorwDat.FB_filled.csv') %>% 
+datalw <- read.csv('traits and species/taxa.NorwDat.FB_filled_EU.csv') %>% 
   mutate(Taxon = case_when(level=='family' ~ family,
                            level=='genus' ~ genus,
                            level=='species' ~ paste(genus, species, sep=" ")),
          lme = as.factor(lme)) %>% 
-  select(-fao,-family,-genus,-species)
+  select(-fao,-family,-genus,-species,-uni,-mergeLME)
 
 norw_dat <- norw_dat %>% 
   mutate(Taxon = Species)
-
-#norw_dat <- norw_dat %>% 
-#  mutate(Taxon = case_when(is.na(Species) & is.na(Genus) ~ Family,
-#                           Species=="" & is.na(Genus) ~ Family,
-#                           is.na(Species) & !is.na(Genus) ~ Genus,
-#                           Species=="" & !is.na(Genus) ~ Genus,
-#                           !is.na(Species) ~ Species))
 
 # get length weight
 norw_dat <- left_join(norw_dat, datalw, by=c('Taxon','lme'))
@@ -557,7 +558,7 @@ norw_dat$wgtlenh <- norw_dat$a*norw_dat$Length^norw_dat$b*norw_dat$numlenh/1000
 norw_dat$wgtlencpue <- norw_dat$a*norw_dat$Length^norw_dat$b*norw_dat$numlencpue/1000
 
 # get species catchabilities per length class
-source('scripts - data processing/Merge_names_walker_with_Norway.R')
+source('scripts - data processing/Merge_names_walker-catchability_with_Norway.R')
 conversions <- read.csv("data/Walkeretal_2017_supp/EfficiencyTab.csv",header=T,sep=",")
 conversions <- subset(conversions,conversions$Gear =="GOV")
 
@@ -589,10 +590,10 @@ norw_dat$wgtlenh_q     <- norw_dat$wgtlenh/ norw_dat$q_eff
 norw_dat$wgtlencpue_q  <- norw_dat$wgtlencpue/ norw_dat$q_eff
 
 # part of data is per species sub-group, part of data is per length-class
-subgroup <- norw_dat[,1:24]
+subgroup <- norw_dat[,c(1:24,39)]
 subgroup <- subgroup %>%
   distinct() %>%
-  group_by(Survey,HaulID,StatRec, Year,Month,Quarter,Season, ShootLat,ShootLong,HaulDur,Area.swept,Area.doors,Gear,Depth,SBT,SST,Family, Genus, Species)  %>% 
+  group_by(Survey,HaulID,StatRec, Year,Month,Quarter,Season, ShootLat,ShootLong,HaulDur,Area.swept,Area.doors,Gear,Depth,SBT,SST,Family, Genus, Species,Code)  %>% 
 summarize_at(.vars=c('numcpue', 'wtcpue', 'numh','wgth'), .funs = function(x) sum(x)) %>% 
   as.data.frame()
 
@@ -605,8 +606,7 @@ lengthcl <- lengthcl %>%
 
 norw_dat <- left_join(subgroup, lengthcl, by=c('HaulID','Species'))
 
-
-save(norw_dat, file='cleaned data/NORBTS10Aug_withq.RData')
+save(norw_dat, file='cleaned data/NORBTSJuly2022_withq.RData')
 
 
 ##########################################################################################

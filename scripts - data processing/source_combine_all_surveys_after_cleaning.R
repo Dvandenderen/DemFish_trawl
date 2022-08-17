@@ -1,142 +1,173 @@
 
-# script to combine all surveys and get weigth cpue and weight corrected cpue per species; all in kg per km2
-# last column shows whether the species is pelagic based on family-level classification using Watson species data table
 
-library(dplyr)
+# --------------------------------------------------------------------------------
+# script to combine all surveys and get weigth cpue and weight corrected 
+# cpue per species; all in kg per km2
+# last column shows whether the species is pelagic based on family-level 
+# classification using Watson species data table
+# --------------------------------------------------------------------------------
 
-#########################
+  library(dplyr)
+
+# --------------------------------------------------------------------------------
 # load Datras data #
-######################## 
-load("cleaned data/ICESsurveys10Aug_withq.RData")
-datras <- survey3
+# --------------------------------------------------------------------------------
+  load("cleaned data/ICESsurveys10Aug_withq.RData")
+  datras <- survey3
+  datras <- subset(datras,!(datras$Survey == "Can-Mar"))
+  
+  # rename corrected data based on gear efficiency q's
+  colnames(datras)[which(names(datras)=="wgtlencpue_q")] <- "wtcpue_q" 
+  colnames(datras)[which(names(datras)=="wgtlenh_q")]    <- "wgth_q" 
+  
+  # get for all unreported weights, weight based on length 
+  # (not used in the analysis as it based on q corrected weights following length-classes
+  # datras$wgth   <- ifelse(is.na(datras$wgth),datras$wgtlenh,datras$wgth)
+  # datras$wtcpue <- ifelse(is.na(datras$wtcpue),datras$wgtlencpue,datras$wtcpue)
+  
+  # remove hauls where cpue data is not available
+  noCpue <- subset(datras,datras$wgth >0 & is.na(datras$wtcpue))
+  noCpue <- unique(noCpue$HaulID)
+  
+  datras <- datras %>%
+    filter(!(HaulID %in% noCpue)) %>%
+    dplyr::select(HaulID,Survey,Gear,Year,Month,ShootLong,ShootLat,Area.swept,Depth,Family,Species,wgth,wtcpue,wgth_q,wtcpue_q) 
+  
+  # one observation has weight but no wtcpue_q
+  # subset(datras,is.na(datras$wtcpue_q) & datras$wtcpue >0)
+  datras$wgth_q <- ifelse(is.na(datras$wgth_q),datras$wgth,datras$wgth_q)
+  datras$wtcpue_q <- ifelse(is.na(datras$wtcpue_q),datras$wtcpue,datras$wtcpue_q)
 
-# rename corrected data based on gear efficiency q's
-colnames(datras)[which(names(datras)=="wgtlencpue_q")] <- "wtcpue_q" 
-colnames(datras)[which(names(datras)=="wgtlenh_q")]    <- "wgth_q" 
-
-# get for all unreported weights, weight based on length   
-datras$wgth   <- ifelse(is.na(datras$wgth),datras$wgtlenh,datras$wgth)
-datras$wtcpue <- ifelse(is.na(datras$wtcpue),datras$wgtlencpue,datras$wtcpue)
-
-# remove hauls where cpue data is not available
-noCpue <- subset(datras,datras$wgth >0 & is.na(datras$wtcpue))
-noCpue <- unique(noCpue$HaulID)
-
-datras <- datras %>%
-  filter(!(HaulID %in% noCpue)) %>%
-  dplyr::select(HaulID,Survey,Gear,Year,Month,ShootLong,ShootLat,Area.swept,Depth,Family,Species,wgth,wtcpue,wgth_q,wtcpue_q) 
-
-datras <- subset(datras,!(datras$Survey == "Can-Mar"))
-
-#########################
+# --------------------------------------------------------------------------------
 # load Norway data #
-########################
-load("cleaned data/NORBTS10Aug_withq.RData")
-norw   <- norw_dat
+# --------------------------------------------------------------------------------
 
-# rename corrected data based on gear efficiency q's
-colnames(norw)[which(names(norw)=="wgtlencpue_q")] <- "wtcpue_q" 
-colnames(norw)[which(names(norw)=="wgtlenh_q")]    <- "wgth_q"
+  load("cleaned data/NORBTSJuly2022_withq.RData")
+  norw   <- norw_dat
 
-# get for all unreported weights, weight based on length   
-norw$wgth   <- ifelse(is.na(norw$wgth),norw$wgtlenh,norw$wgth)
-norw$wtcpue <- ifelse(is.na(norw$wtcpue),norw$wgtlencpue,norw$wtcpue)
+  # rename corrected data based on gear efficiency q's
+  colnames(norw)[which(names(norw)=="wgtlencpue_q")] <- "wtcpue_q" 
+  colnames(norw)[which(names(norw)=="wgtlenh_q")]    <- "wgth_q"
 
-# remove hauls where cpue data is not available
-noCpue <- subset(norw,norw$wgth >0 & is.na(norw$wtcpue))
-noCpue <- unique(noCpue$HaulID)
+  # get for all unreported weights, weight based on length
+  # (not used in the analysis as it based on q corrected weights following length-classes
+  norw$wgth   <- ifelse(is.na(norw$wgth),norw$wgtlenh,norw$wgth)
+  norw$wtcpue <- ifelse(is.na(norw$wtcpue),norw$wgtlencpue,norw$wtcpue)
 
-norw <- norw %>%
-  filter(!(HaulID %in% noCpue)) %>%
-  dplyr::select(HaulID,Survey,Gear,Year,Month,ShootLong,ShootLat,Area.swept,Depth,Family,Species,wgth,wtcpue,wgth_q,wtcpue_q) 
+  # some species had no length information but wtcpue is available
+  geareff <- read.csv(file = "data/Walkeretal_2017_supp/EfficiencyTab.csv",sep=",",header = T)
+  norw <- cbind(norw,geareff[match(norw$Code,geareff$Code),c("Group")])
+  norw$Code <- norw[,ncol(norw)]; norw <- norw[,-(ncol(norw))]
+  
+  norw$wtcpue_q <- ifelse(is.na(norw$wtcpue_q) & norw$Code =="GRP1", norw$wtcpue /0.01856618,norw$wtcpue_q)
+  norw$wtcpue_q <- ifelse(is.na(norw$wtcpue_q) & norw$Code =="GRP2", norw$wtcpue /0.22182677,norw$wtcpue_q)
+  norw$wtcpue_q <- ifelse(is.na(norw$wtcpue_q) & norw$Code =="GRP3", norw$wtcpue /0.29919480,norw$wtcpue_q)
+  norw$wtcpue_q <- ifelse(is.na(norw$wtcpue_q) & norw$Code =="GRP4", norw$wtcpue /0.39701479,norw$wtcpue_q)
+  norw$wtcpue_q <- ifelse(is.na(norw$wtcpue_q) & norw$Code =="GRP5", norw$wtcpue /0.25488862,norw$wtcpue_q)
+  norw$wtcpue_q <- ifelse(is.na(norw$wtcpue_q) & norw$Code =="GRP6", norw$wtcpue /0.22871213,norw$wtcpue_q)
+  norw$wtcpue_q <- ifelse(is.na(norw$wtcpue_q) & norw$Code =="GRP7", norw$wtcpue /0.30596754,norw$wtcpue_q)
 
-# combine datras with norw 
-trawl <- rbind(datras,norw)
+  # remove hauls where cpue data is not available (note: many hauls before 1989)
+  noCpue <- subset(norw,norw$wgth >0 & is.na(norw$wtcpue))
+  noCpue <- unique(noCpue$HaulID)
+  
+  # remove all within shallow North Sea - already (partly) included in DATRAS
+  norinNS <- subset(norw,norw$ShootLat < 61.89 & norw$Depth <200)
+  norinNS <- unique(norinNS$HaulID)
+  
+  norw <- norw %>%
+    filter(!(HaulID %in% c(noCpue,norinNS))) %>%
+    dplyr::select(HaulID,Survey,Gear,Year,Month,ShootLong,ShootLat,Area.swept,Depth,Family,Species,wgth,wtcpue,wgth_q,wtcpue_q) 
 
-#########################
+  # combine datras with norw 
+  trawl <- rbind(datras,norw)
+
+# --------------------------------------------------------------------------------
 # load oceanadapt data #
-########################
-adapt <- readRDS("cleaned data/all-regions-full-oceanadapt.rds")
-load("C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Gear and catches/oceanadapt_species_qvalues.RData")
+# --------------------------------------------------------------------------------
 
-adapt <- cbind(adapt,gd_new[match(adapt$spp,gd_new$spec),c("family","Efficiency")])
-adapt <- subset(adapt,!(is.na(adapt$Efficiency))) # all others are invertebrates
-adapt$wtcpue_q <- adapt$wtcpue/adapt$Efficiency 
+  adapt <- readRDS("cleaned data/all-regions-full-oceanadapt.rds")
+  load("C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Gear and catches/oceanadapt_species_qvalues.RData")
 
-# convert all to kg/km2
-adapt$wtcpue   <- adapt$wtcpue * 100 #kg/HA to kg/km2
-adapt$wtcpue_q <- adapt$wtcpue_q * 100 #kg/HA to kg/km2
+  adapt <- cbind(adapt,gd_new[match(adapt$spp,gd_new$spec),c("family","Efficiency")])
+  adapt <- subset(adapt,!(is.na(adapt$Efficiency))) # all others are invertebrates
+  adapt$wtcpue_q <- adapt$wtcpue/adapt$Efficiency 
+  
+  # convert all to kg/km2
+  adapt$wtcpue   <- adapt$wtcpue * 100 #kg/HA to kg/km2
+  adapt$wtcpue_q <- adapt$wtcpue_q * 100 #kg/HA to kg/km2
+  
+  # get extra column (some/most columns can be included with real data, if needed)
+  adapt$gear <- NA
+  adapt$month <- NA
+  adapt$area_swept <- NA
+  adapt$wgth <- NA
+  adapt$wgth_q <- NA
+  
+  adapt <- adapt %>%
+    dplyr::select(haulid,region,gear,year,month,lon,lat,area_swept,depth,family,spp,wgth,wtcpue,wgth_q,wtcpue_q) 
+  
+  # combine with other surveys
+  colnames(trawl) <- colnames(adapt)
+  trawl <- rbind(trawl,adapt)
+  
+  # there are a few stations with INF numbers, remove
+  INF_nb <- subset(trawl,trawl$wtcpue_q > 10^100)
+  
+  trawl <- trawl %>% 
+    filter(!(haulid %in% unique(INF_nb$haulid))) %>%
+    as.data.frame()
 
-# get extra column (some/most columns can be included with real data, if needed)
-adapt$gear <- NA
-adapt$month <- NA
-adapt$area_swept <- NA
-adapt$wgth <- NA
-adapt$wgth_q <- NA
-
-adapt <- adapt %>%
-  dplyr::select(haulid,region,gear,year,month,lon,lat,area_swept,depth,family,spp,wgth,wtcpue,wgth_q,wtcpue_q) 
-
-# combine with other surveys
-colnames(trawl) <- colnames(adapt)
-trawl <- rbind(trawl,adapt)
-
-# there are a few stations with INF numbers, remove
-INF_nb <- subset(trawl,trawl$wtcpue_q > 10^100)
-
-trawl <- trawl %>% 
-  filter(!(haulid %in% unique(INF_nb$haulid))) %>%
-  as.data.frame()
-
-############## 
+# --------------------------------------------------------------------------------
 ### get trait information
-##############
+# --------------------------------------------------------------------------------
+  
+  # select "pelagic" fish 
+  pel_family <- c("Clupeidae" , "Osmeridae",  "Exocoetidae" , "Atherinidae" , "Engraulidae",
+                  "Hemiramphidae", "Inermiidae","Belonidae","Scomberesocidae", "Echeneidae",
+                  "Carangidae","Bramidae","Scombridae","Centrolophidae","Istiophoridae","Ammodytidae")
 
-# select "pelagic" fish 
-pel_family <- c("Clupeidae" , "Osmeridae",  "Exocoetidae" , "Atherinidae" , "Engraulidae",
-                "Hemiramphidae", "Inermiidae","Belonidae","Scomberesocidae", "Echeneidae",
-                "Carangidae","Bramidae","Scombridae","Centrolophidae","Istiophoridae","Ammodytidae")
+  trawl$type <- ifelse(trawl$family %in% pel_family,"pel","dem")
 
-trawl$type <- ifelse(trawl$family %in% pel_family,"pel","dem")
+  # select "large" fish species -- Linf > 80 cm 
+  traits <- read.csv("traits and species/Beukhofetal_2019/Traits_fish.csv",header=T,sep=";",row.names=NULL)
+  traits_large <- subset(traits,traits$length.infinity > 80)
+  large <- unique(traits_large$taxon)
+  trawl$size <- ifelse(trawl$spp %in% large,"large","small")
+  
+  trawl <- cbind(trawl,traits[match(trawl$spp,traits$taxon),c("tl")])
+  colnames(trawl)[ncol(trawl)] <- "tl"
+  
+  # add tl for all NAs based on higher taxonomic level
+  tne <- subset(trawl,is.na(trawl$tl))
+  tne <- data.frame(species = unique(tne$spp))
+  tne$name <- sapply(strsplit(tne$species," "), `[`, 1)
+  tne <- cbind(tne,traits[match(tne$name,traits$taxon),c("tl")])
+  genus <- aggregate(traits$tl,by=list(traits$genus),FUN=mean)
+  tne <- cbind(tne,genus[match(tne$name,genus$Group.1),c("x")])
+  family <- aggregate(traits$tl,by=list(traits$family),FUN=mean)
+  tne <- cbind(tne,family[match(tne$name,family$Group.1),c("x")])
+  colnames(tne) <- c("species","name","taxon","genus","family")
+  tne$trophic <- tne$taxon
+  tne$trophic <- ifelse(!(is.na(tne$trophic)) , tne$trophic,tne$genus)
+  tne$trophic <- ifelse(!(is.na(tne$trophic)) , tne$trophic,tne$family)
+  tne$trophic <- ifelse(!(is.na(tne$trophic)) , tne$trophic, 3.77) # few NAs left - take the mean of all 
+  trawl <- cbind(trawl,tne[match(trawl$spp,tne$species),c("trophic")])
+  colnames(trawl)[ncol(trawl)] <- "trophic"
+  trawl$tl <- ifelse(!(is.na(trawl$tl)),trawl$tl,trawl$trophic)
+  trawl <- trawl[,-ncol(trawl)]
 
-# select "large" fish species -- Linf > 80 cm 
-traits <- read.csv("traits and species/Beukhofetal_2019/Traits_fish.csv",header=T,sep=";",row.names=NULL)
-traits_large <- subset(traits,traits$length.infinity > 80)
-large <- unique(traits_large$taxon)
-trawl$size <- ifelse(trawl$spp %in% large,"large","small")
+# --------------------------------------------------------------------------------
+# add depths for the hauls with no information using ETOPO ICE depth information
+# --------------------------------------------------------------------------------
+  # run -- Get depth for all hauls without information.R (ETOPO dataset is outside github)
+  # no need to re-run
 
-trawl <- cbind(trawl,traits[match(trawl$spp,traits$taxon),c("tl")])
-colnames(trawl)[ncol(trawl)] <- "tl"
+  load("cleaned data/Depth_hauls_NA.RData")
+  trawl <- cbind(trawl,depth_haul[match(trawl$haulid,depth_haul$haulid),c("depth")])
+  colnames(trawl)[ncol(trawl)] <- "depth2"
+  trawl$depth <- ifelse(is.na(trawl$depth),trawl$depth2,trawl$depth)
+  trawl <- trawl[,-ncol(trawl)] 
 
-# add tl for all NAs based on higher taxonomic level
-tne <- subset(trawl,is.na(trawl$tl))
-tne <- data.frame(species = unique(tne$spp))
-tne$name <- sapply(strsplit(tne$species," "), `[`, 1)
-tne <- cbind(tne,traits[match(tne$name,traits$taxon),c("tl")])
-genus <- aggregate(traits$tl,by=list(traits$genus),FUN=mean)
-tne <- cbind(tne,genus[match(tne$name,genus$Group.1),c("x")])
-family <- aggregate(traits$tl,by=list(traits$family),FUN=mean)
-tne <- cbind(tne,family[match(tne$name,family$Group.1),c("x")])
-colnames(tne) <- c("species","name","taxon","genus","family")
-tne$trophic <- tne$taxon
-tne$trophic <- ifelse(!(is.na(tne$trophic)) , tne$trophic,tne$genus)
-tne$trophic <- ifelse(!(is.na(tne$trophic)) , tne$trophic,tne$family)
-tne$trophic <- ifelse(!(is.na(tne$trophic)) , tne$trophic, 3.77) # few NAs left - take the mean of all 
-trawl <- cbind(trawl,tne[match(trawl$spp,tne$species),c("trophic")])
-colnames(trawl)[ncol(trawl)] <- "trophic"
-trawl$tl <- ifelse(!(is.na(trawl$tl)),trawl$tl,trawl$trophic)
-trawl <- trawl[,-ncol(trawl)]
+  rm(pel_family,adapt,norw,noCpue,norw_dat,datras,survey3,gd_new,traits,traits_large,large,INF_nb,depth_haul,tne,genus,family,geareff)
 
-###############
-#### add depths for the hauls with no information using ETOPO ICE depth information
-###############
-# run -- Get depth for all hauls without information.R (ETOPO dataset is outside github)
-# no need to re-run
-
-load("cleaned data/Depth_hauls_NA.RData")
-trawl <- cbind(trawl,depth_haul[match(trawl$haulid,depth_haul$haulid),c("depth")])
-colnames(trawl)[ncol(trawl)] <- "depth2"
-trawl$depth <- ifelse(is.na(trawl$depth),trawl$depth2,trawl$depth)
-trawl <- trawl[,-ncol(trawl)] 
-
-rm(pel_family,adapt,norw,noCpue,norw_dat,datras,survey3,gd_new,traits,traits_large,large,INF_nb,depth_haul,tne,genus,family)

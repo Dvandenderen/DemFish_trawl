@@ -1,7 +1,7 @@
 ---
-title: "SEM output 50-250 meter depth"
+title: "SEM output"
 author: "D van Denderen"
-date: "April 2022"
+date: "August 2022"
 output: html_document
 ---
 
@@ -9,22 +9,22 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## SEM model
+## SEM model depth sensitivity
 
 SEM model is developed to analyse regional variation in demersal fish biomass. For more details on the demersal fish community data see <https://github.com/Dvandenderen/DemFish_trawl>.
 
 SEM model is run for:
 
-- Two spatial units
-  * Ecoregions (n=20)
-  * Management subdivisions (n=41)
+- Two spatial scales
+  * Ecoregions (n=21)
+  * Management subdivisions (n=45)
   
 - Three time periods
   * 1990-1995
   * 2000-2005
   * 2010-2015
   
-Results are obtained with Rpackage Lavaan. The initial model has too many predictor variables for the number of observations. The initial model is therefore not evaluated for overall model fit - just used to analyse the pathways. The final model excludes depth and detrital flux. Both versions are used in the result section. Overall model fit is estimated using a Chi-square test (Lavaan) and Fisher's C test (piecewiseSEM). 
+Results are obtained with Rpackage Lavaan. Since some surveys included deep locations and other surveys shallow coastal waters, we re-examined the final SEM for all grid cells with trawl survey depths between 50 and 250 meters. 
 
 ```{r,echo= T,  warning = F}
 library(sp)
@@ -38,7 +38,7 @@ SEM model causal pathway is primarily based on predictor variables used in the m
 - Temperature is expected to decrease biomass (higher turnover, higher metabolic costs)
 - Fishing exploitation is expected to decrease biomass
 - More energy is lost in longer fish food webs (mean number of trophic steps)
-- higher benthic and zoopl production increase fish biomass
+- zoopl production increases fish biomass
 
 ```{r, warning = F, echo= T}
 # load workspace (spatial analysis.R)
@@ -52,13 +52,14 @@ cpue_depth <- subset(cpue_depth,cpue_depth$depth > 50 & cpue_depth$depth < 250)
 cpue_good <- subset(cpue_good,cpue_good$uni %in% cpue_depth$uni)
 
 # re-scale parameters
-semparam <- c("NPP","lz_prod","biomass","tlw","SST_time","ER_log")
+semparam <- c("NPP","z_prod","biomass","tlw","SST_time","ER_log")
 
 ## hypothesized model lavaan
-modT2='biomass ~ tlw + ER_log + SST_time + lz_prod
+modT2='biomass ~ tlw + ER_log + SST_time + z_prod
        tlw ~ NPP + ER_log
-       lz_prod ~ NPP +  SST_time  
-       NPP ~ SST_time'
+       z_prod ~ NPP +  SST_time  
+       NPP ~ SST_time       
+       SST_time ~~ 0*ER_log'
 
 ## minimum nb of grid cells per region
 id_min <- 6
@@ -75,11 +76,14 @@ datbio <- subset(datbio,datbio$countgrid >= id_min) # exclude regions with few g
 # get exploitation rate
 datbio$ER_log <- log10(datbio$Catch_sqkm/datbio$biomass)
 
+# get total zooplankton production
+datbio$z_prod <- datbio$lz_prod + datbio$mz_prod
+
 # piecewise SEM
 model <- psem(
-  lm(biomass ~ tlw + ER_log + SST_time + lz_prod, data=datbio),
+  lm(biomass ~ tlw + ER_log + SST_time + z_prod, data=datbio),
   lm(tlw ~ NPP + ER_log, data=datbio),
-  lm(lz_prod ~ NPP +  SST_time , data=datbio),
+  lm(z_prod ~ NPP +  SST_time , data=datbio),
   lm(NPP ~ SST_time , data=datbio),
   datbio)
 
@@ -105,11 +109,14 @@ datbio <- subset(datbio,datbio$countgrid >= id_min) # exclude regions with few g
 # get exploitation rate
 datbio$ER_log <- log10(datbio$Catch_sqkm/datbio$biomass)
 
+# get total zooplankton production
+datbio$z_prod <- datbio$lz_prod + datbio$mz_prod
+
 # piecewise SEM
 model <- psem(
-  lm(biomass ~ tlw + ER_log + SST_time + lz_prod, data=datbio),
+  lm(biomass ~ tlw + ER_log + SST_time + z_prod, data=datbio),
   lm(tlw ~ NPP + ER_log, data=datbio),
-  lm(lz_prod ~ NPP +  SST_time , data=datbio),
+  lm(z_prod ~ NPP +  SST_time , data=datbio),
   lm(NPP ~ SST_time , data=datbio),
   datbio)
 
@@ -136,11 +143,14 @@ datbio <- subset(datbio,datbio$countgrid >= id_min) # exclude regions with few g
 # get exploitation rate
 datbio$ER_log <- log10(datbio$Catch_sqkm/datbio$biomass)
 
+# get total zooplankton production
+datbio$z_prod <- datbio$lz_prod + datbio$mz_prod
+
 # piecewise SEM
 model <- psem(
-  lm(biomass ~ tlw + ER_log + SST_time + lz_prod, data=datbio),
+  lm(biomass ~ tlw + ER_log + SST_time + z_prod, data=datbio),
   lm(tlw ~ NPP + ER_log, data=datbio),
-  lm(lz_prod ~ NPP +  SST_time , data=datbio),
+  lm(z_prod ~ NPP +  SST_time , data=datbio),
   lm(NPP ~ SST_time , data=datbio),
   datbio)
 
@@ -166,11 +176,14 @@ datbio <- subset(datbio,datbio$countgrid >= id_min) # exclude regions with few g
 # get exploitation rate
 datbio$ER_log <- log10(datbio$Catch_sqkm/datbio$biomass)
 
+# get total zooplankton production
+datbio$z_prod <- datbio$lz_prod + datbio$mz_prod
+
 # piecewise SEM
 model <- psem(
-  lm(biomass ~ tlw + ER_log + SST_time + lz_prod, data=datbio),
+  lm(biomass ~ tlw + ER_log + SST_time + z_prod, data=datbio),
   lm(tlw ~ NPP + ER_log, data=datbio),
-  lm(lz_prod ~ NPP +  SST_time , data=datbio),
+  lm(z_prod ~ NPP +  SST_time , data=datbio),
   lm(NPP ~ SST_time , data=datbio),
   datbio)
 
@@ -196,11 +209,14 @@ datbio <- subset(datbio,datbio$countgrid >= id_min) # exclude regions with few g
 # get exploitation rate
 datbio$ER_log <- log10(datbio$Catch_sqkm/datbio$biomass)
 
+# get total zooplankton production
+datbio$z_prod <- datbio$lz_prod + datbio$mz_prod
+
 # piecewise SEM
 model <- psem(
-  lm(biomass ~ tlw + ER_log + SST_time + lz_prod, data=datbio),
+  lm(biomass ~ tlw + ER_log + SST_time + z_prod, data=datbio),
   lm(tlw ~ NPP + ER_log, data=datbio),
-  lm(lz_prod ~ NPP +  SST_time , data=datbio),
+  lm(z_prod ~ NPP +  SST_time , data=datbio),
   lm(NPP ~ SST_time , data=datbio),
   datbio)
 
@@ -226,11 +242,14 @@ datbio <- subset(datbio,datbio$countgrid >= id_min) # exclude regions with few g
 # get exploitation rate
 datbio$ER_log <- log10(datbio$Catch_sqkm/datbio$biomass)
 
+# get total zooplankton production
+datbio$z_prod <- datbio$lz_prod + datbio$mz_prod
+
 # piecewise SEM
 model <- psem(
-  lm(biomass ~ tlw + ER_log + SST_time + lz_prod, data=datbio),
+  lm(biomass ~ tlw + ER_log + SST_time + z_prod, data=datbio),
   lm(tlw ~ NPP + ER_log, data=datbio),
-  lm(lz_prod ~ NPP +  SST_time , data=datbio),
+  lm(z_prod ~ NPP +  SST_time , data=datbio),
   lm(NPP ~ SST_time , data=datbio),
   datbio)
 
@@ -256,11 +275,14 @@ datbio <- subset(datbio,datbio$countgrid >= id_min) # exclude regions with few g
 # get exploitation rate
 datbio$ER_log <- log10(datbio$Catch_sqkm/datbio$biomass)
 
+# get total zooplankton production
+datbio$z_prod <- datbio$lz_prod + datbio$mz_prod
+
 # piecewise SEM
 model <- psem(
-  lm(biomass ~ tlw + ER_log + SST_time + lz_prod, data=datbio),
+  lm(biomass ~ tlw + ER_log + SST_time + z_prod, data=datbio),
   lm(tlw ~ NPP + ER_log, data=datbio),
-  lm(lz_prod ~ NPP +  SST_time , data=datbio),
+  lm(z_prod ~ NPP +  SST_time , data=datbio),
   lm(NPP ~ SST_time , data=datbio),
   datbio)
 
@@ -286,11 +308,14 @@ datbio <- subset(datbio,datbio$countgrid >= id_min) # exclude regions with few g
 # get exploitation rate
 datbio$ER_log <- log10(datbio$Catch_sqkm/datbio$biomass)
 
+# get total zooplankton production
+datbio$z_prod <- datbio$lz_prod + datbio$mz_prod
+
 # piecewise SEM
 model <- psem(
-  lm(biomass ~ tlw + ER_log + SST_time + lz_prod, data=datbio),
+  lm(biomass ~ tlw + ER_log + SST_time + z_prod, data=datbio),
   lm(tlw ~ NPP + ER_log, data=datbio),
-  lm(lz_prod ~ NPP +  SST_time , data=datbio),
+  lm(z_prod ~ NPP +  SST_time , data=datbio),
   lm(NPP ~ SST_time , data=datbio),
   datbio)
 
