@@ -1,0 +1,168 @@
+setwd("C:/Users/danie/Documents/GFDL_mom6/15arc")
+
+library(ncdf4)
+library(raster)
+library(sf)
+
+# ------------------------------------------------------------------------------
+# get detrital flux at bottom mol m-2 per year
+# ------------------------------------------------------------------------------
+nc_data <- nc_open('gfdl-mom6-cobalt2_obsclim_expc-bot_15arcmin_global_monthly_1961_2010.nc')
+lon <- ncvar_get(nc_data, "lon")
+lat <- ncvar_get(nc_data, "lat", verbose = F)
+t <- ncvar_get(nc_data, "time")
+tyear <- rep(1961:2010, each=12)
+dflux <- ncvar_get(nc_data, "expc-bot")
+
+yf <- list()
+nyear <- 1990:2010
+for (j in 1:length(nyear)){
+  idx <- which(tyear == nyear[j])
+  fs  <- dflux[,,idx]
+  fluxseabed <- list(fs[,,1],fs[,,2],fs[,,3],fs[,,4],fs[,,5],fs[,,6],fs[,,7],fs[,,8],
+                     fs[,,9],fs[,,10],fs[,,11],fs[,,12])
+  Fl_output  <- Reduce('+', fluxseabed) /12            
+  yf[[j]] <- Fl_output
+}
+dfluxout  <- Reduce('+', yf)/length(nyear) 
+
+cobquart <- merge(lon,lat)
+dfluxvec <- c()
+for(p in 1:720){
+  dfluxvec <- c(dfluxvec,dfluxout[,p])
+  }
+cobquart$Dflux <- dfluxvec
+cobquart$Dflux <- cobquart$Dflux * 12 * 9 # 1 mol C m-2 s-1 = 12 gram C m-2 s-1 = 108 gram ww m-2 s-1
+cobquart$Dflux <- cobquart$Dflux * 31536000   # gram ww m-2 s-1   to  gram ww m-2 y-1  
+
+rm(list=setdiff(ls(), "cobquart"))
+
+#-------------------------------------------------------------------------------
+# add depth - for now ETOPO1
+#-------------------------------------------------------------------------------
+load("C:/Users/danie/Dropbox/Werk/Archief/2018 Nat Eco Evo/Abiotc data/ETOPO1_ICe_depthmatrix.RData")
+
+depth[[3]][depth[[3]]>=0]<-NA
+nrow(depth[[3]])
+ncol(depth[[3]])
+
+depth[[3]]<-depth[[3]][-1:-30,-1:-30]
+depth[[3]]<-depth[[3]][-10742:-10771,-21542:-21571]
+### re-scale to lower raster
+r_hr <- raster(nrow=10741, ncol=21541)
+r_hr[]<-depth[[3]]
+r_lr <- raster(nrow=720, ncol=1440)
+r_lr<-resample(r_hr,r_lr, method="bilinear")
+#plot(r_lr)
+Seabeddepth <- matrix(r_lr@data@values,ncol=720,nrow=1440)
+Seabeddepth  <- Seabeddepth[ ,ncol(Seabeddepth):1 ]
+
+depthvec <- c()
+for(p in 1:720){
+  depthvec <- c(depthvec,Seabeddepth[,p])
+}
+cobquart$depth_ETOPO <- depthvec
+#ggplot()+geom_point(data=cobquart,aes(x=x,y=y,color=depth_ETOPO))
+
+save(cobquart, file="COBALT_15arc_allgrids.RData")
+
+# ------------------------------------------------------------------------------
+# load bottom temperature
+# ------------------------------------------------------------------------------
+nc_data <- nc_open('gfdl-mom6-cobalt2_obsclim_tob_15arcmin_global_monthly_1961_2010.nc')
+lon <- ncvar_get(nc_data, "lon")
+lat <- ncvar_get(nc_data, "lat", verbose = F)
+t <- ncvar_get(nc_data, "time")
+tyear <- rep(1961:2010, each=12)
+tob <- ncvar_get(nc_data, "tob")
+
+yf <- list()
+nyear <- 1990:2010
+for (j in 1:length(nyear)){
+  idx <- which(tyear == nyear[j])
+  fs  <- tob[,,idx]
+  Tseabed <- list(fs[,,1],fs[,,2],fs[,,3],fs[,,4],fs[,,5],fs[,,6],fs[,,7],fs[,,8],
+                  fs[,,9],fs[,,10],fs[,,11],fs[,,12])
+  tob_output  <- Reduce('+', Tseabed) /12            
+  yf[[j]] <- tob_output
+}
+tobout  <- Reduce('+', yf)/length(nyear) 
+
+tobvec <- c()
+for(p in 1:720){
+  tobvec <- c(tobvec,tobout[,p])
+}
+cobquart$Tbottom <- tobvec
+
+save(cobquart, file="COBALT_15arc_allgrids.RData")
+
+# ------------------------------------------------------------------------------
+# get water column temperatures
+# ------------------------------------------------------------------------------
+nc_data <- nc_open('gfdl-mom6-cobalt2_obsclim_thetao_15arcmin_global_monthly_1961_2010.nc')
+lon   <- ncvar_get(nc_data, "lon")
+lat   <- ncvar_get(nc_data, "lat", verbose = F)
+lev   <- ncvar_get(nc_data, "lev", verbose = F)
+t     <- ncvar_get(nc_data, "time")
+tyear <- rep(1961:2010, each=12)
+
+for (q in 1:35){
+  wtsub     <- ncvar_get(nc_data, "thetao",start =c(1,1,q,1),count =c(-1,-1,1,-1))
+  yf <- list()
+  nyear <- 1990:2010
+  for (j in 1:length(nyear)){
+    idx <- which(tyear == nyear[j])
+    fs   <- wtsub[,,idx]
+    temp <- list(fs[,,1],fs[,,2],fs[,,3],fs[,,4],fs[,,5],fs[,,6],fs[,,7],fs[,,8],
+                 fs[,,9],fs[,,10],fs[,,11],fs[,,12])
+    wtc_output  <- Reduce('+', temp) /12            
+    yf[[j]] <- wtc_output
+  }
+  wtcout  <- Reduce('+', yf)/length(nyear) 
+  tempvec <- c()
+  for(p in 1:720){
+    tempvec <- c(tempvec,wtcout[,p])
+  }
+  cobquart[,paste("T",lev[q],sep="_")] <- tempvec
+}
+
+save(cobquart, file="COBALT_15arc_allgrids.RData")
+
+
+# ------------------------------------------------------------------------------
+# get benthic production
+# ------------------------------------------------------------------------------
+cobquart$ben_prod <- cobquart$Dflux * 0.1
+cobquart <- subset(cobquart,!(is.na(cobquart$Dflux)))
+
+# ------------------------------------------------------------------------------
+# now load easy information
+# ------------------------------------------------------------------------------
+library(sf)
+setwd("C:/Users/danie/Documents/GFDL_mom6/60arc")
+load("COBALT_60arc.RData")
+
+cobone <- subset(cobone,!(is.na(cobone$RmaxL)))
+coordinates(cobone) <- ~ x + y  
+raster::crs(cobone) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+cobone <- sf::st_as_sf(cobone)
+
+cobquart_spat <- cobquart
+coordinates(cobquart_spat) <- ~ x + y
+raster::crs(cobquart_spat) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+cobquart_spat <- st_as_sf(cobquart_spat)
+
+cls <-  st_join(cobquart_spat, cobone, join = st_nearest_feature)
+cobquart$lz_hloss  <- cls$lz_prod 
+cobquart$mz_hloss  <- cls$mz_prod 
+cobquart$RmaxL     <- cls$RmaxL
+cobquart$mz_bio    <- cls$mz_bio
+cobquart$lz_bio    <- cls$lz_bio
+cobquart$photic    <- cls$photic
+
+setwd("C:/Users/danie/Documents/GFDL_mom6/15arc")
+save(cobquart, file="COBALT_15arc.RData")
+
+#jpeg("rplot.jpg", width = 1200, height = 750)
+#ggplot()+geom_point(data=cobquart,aes(x=x,y=y,color=RmaxL))
+#dev.off()

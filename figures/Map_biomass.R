@@ -9,6 +9,7 @@ library(gridExtra)
 library(viridis)
 library(ggplot2)
 library(latex2exp)
+library(rgdal)
 
 ##################
 load("cleaned data/surveyed_grid.RData") # get grid information
@@ -42,11 +43,16 @@ ncoords$dembio[ncoords$dembio>80] <- 80
 
 nco <- sf::st_as_sf(ncoords)
 
+# load ecoregions
+shape <- readOGR(dsn = "data/MEOW shapefiles" ,layer="meow_ecos")
+shape <- subset(shape,shape$ECOREGION %in% unique(nco$ECO_REG))
+
 # plot map
 figmap1 <- ggplot(nco) + 
   geom_sf( aes(fill=dembio), colour = NA ) + 
   scale_fill_viridis(name="Tonnes / km2 \n \n", limits = c(0,80),
                      labels = c("20","40","60",TeX("$\\geq$80")),breaks=c(20,40,60,80))  + 
+  geom_sf(data=shape,col="darkgrey",fill=NA) +
   geom_sf(data = ctrys, fill="grey",colour=NA) +
   coord_sf(crs = 5070,xlim = c(-4927853,3633046),ylim=c(307076,6029855))
 
@@ -67,7 +73,8 @@ figmap1 <- figmap1 +  theme(plot.background=element_blank(),
 figmap2 <- ggplot(nco) + 
   geom_sf( aes(fill=dembio), colour = NA ) + 
   scale_fill_viridis(name="Tonnes / km2 \n \n", limits = c(0,80),
-                     labels = c("20","40","60",TeX("$\\geq$80")),breaks=c(20,40,60,80))  + 
+                     labels = c("20","40","60",TeX("$\\geq$80")),breaks=c(20,40,60,80))  +
+  geom_sf(data=shape,col="darkgrey",fill=NA) +
   geom_sf(data = ctrys, fill="grey",colour=NA) +
   coord_sf(crs =  "+proj=aea +lat_0=23 +lon_0=10 +lat_1=29.5 +lat_2=45.5 +x_0=0 
            +y_0=0 +datum=NAD83 +units=m +no_defs", 
