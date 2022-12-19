@@ -46,6 +46,7 @@ nco <- sf::st_as_sf(ncoords)
 # load ecoregions
 shape <- readOGR(dsn = "data/MEOW shapefiles" ,layer="meow_ecos")
 shape <- subset(shape,shape$ECOREGION %in% unique(nco$ECO_REG))
+shape <- sf::st_as_sf(shape)
 
 # plot map
 figmap1 <- ggplot(nco) + 
@@ -120,7 +121,8 @@ dat <- get_bio(cpue_good,t_start = 1990,t_end = 2015,spatialunit = "ECO_REG")  #
 dat$ER <- dat$Catch_sqkm / dat$biomass
 dat$biomass <-dat$biomass / 1000
 
-sc1 <- qplot(SST_time, biomass, data=dat) + geom_smooth(method="lm", formula=y~x,se=FALSE)+
+sc1 <- qplot(SST_time, biomass, data=dat) + 
+  geom_smooth(method="lm",color="grey", formula=y~x,se=F,linetype = "dashed")+
            xlab("Temperature \n (degrees C)") + ylab("Biomass \n (Tonnes / km2)")+
            scale_y_continuous(breaks=seq(0, 100, by = 25)) + 
            scale_x_continuous(breaks=seq(0, 24, by = 12)) +
@@ -149,7 +151,7 @@ sc2 <- qplot(log10(ER), biomass, data=dat) + ylab("") +
         panel.border  = element_rect(colour = "grey", size=.5,fill=NA),
         legend.text   = element_text(size=11),
         legend.title  = element_text(size=11)) + 
-  geom_smooth(method="lm", formula=y~x,se=FALSE)
+  geom_smooth(color="grey", method="lm", formula=y~x,se=F,linetype = "dashed")
   
 sc3 <- qplot(NPP, biomass, data=dat) + ylab("") +
         xlab("Net primary prod.\n (mg C / m2 / day)") + ylab("")+
@@ -164,7 +166,7 @@ sc3 <- qplot(NPP, biomass, data=dat) + ylab("") +
         panel.border  = element_rect(colour = "grey", size=.5,fill=NA),
         legend.text   = element_text(size=11),
         legend.title  = element_text(size=11))  +
-        geom_smooth(method="lm", formula=y~x,se=FALSE)
+        geom_smooth(method="lm",color="grey", formula=y~x,se=F,linetype = "dashed")
 
 lower <- cowplot::plot_grid(sc1,sc2,sc3,nrow = 1, rel_widths=c(1.1,1,1),
                    labels = c('b)','c)','d)'), 

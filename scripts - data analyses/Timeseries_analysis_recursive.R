@@ -19,6 +19,7 @@ library(nlme)
  cnam         <- colnames(cpue_good[,c(7,3,4,8,10,11)])
  colnames(tt) <- c("ECO_REG","year",cnam)
  tt[,4:8]     <- tt[,4:8]/tt$ocean_sqkm
+ 
 
 # -------------------------------------------------------------------------------
 # add biomass smoother
@@ -41,9 +42,19 @@ library(nlme)
 # -------------------------------------------------------------------------------
 # plot timeseries per region
 # -------------------------------------------------------------------------------
-
-  lattice::xyplot(tt$biomass ~ tt$year | tt$ECO_REG, col = 1, type="o")
-  lattice::xyplot(tt$Bio_s ~ tt$year | tt$ECO_REG, col = 1, type="o")
+ tt$ECO_short <- tt$ECO_REG
+ tt$ECO_short <- ifelse(tt$ECO_short == "Gulf of Maine/Bay of Fundy","G. Maine/ Bay Fundy",tt$ECO_short) 
+ tt$ECO_short <- ifelse(tt$ECO_short == "Oregon, Washington, Vancouver Coast and Shelf","Ore. Wash. Vanc.",tt$ECO_short) 
+ tt$ECO_short <- ifelse(tt$ECO_short == "Northern Gulf of Mexico","N. Gulf of Mexico",tt$ECO_short) 
+ tt$ECO_short <- ifelse(tt$ECO_short == "Southern California Bight","S. California Bight",tt$ECO_short) 
+ tt$ECO_short <- ifelse(tt$ECO_short == "Northern Norway and Finnmark","N. Norway & Finnm.",tt$ECO_short) 
+ tt$ECO_short <- ifelse(tt$ECO_short == "South European Atlantic Shelf","S. Eur. Atl. Shelf",tt$ECO_short) 
+ tt$ECO_short <- ifelse(tt$ECO_short == "Gulf of St. Lawrence - Eastern Scotian Shelf" ,"St. Lawr. & E. Scot." ,tt$ECO_short) 
+ tt$ECO_short <- ifelse(tt$ECO_short == "North American Pacific Fijordland" ,"N.A. Pac. Fijordland"  ,tt$ECO_short) 
+ tt$ECO_short <- ifelse(tt$ECO_short == "North and East Barents Sea" ,"N & E Barents Sea"  ,tt$ECO_short) 
+ 
+  lattice::xyplot(tt$biomass/1000 ~ tt$year | tt$ECO_short, col = 1, 
+                  type="o",cex.lab=0.5,xlab="Year",ylab="Tonnes per km2")
 
 # -------------------------------------------------------------------------------
 # prepare data for model fitting

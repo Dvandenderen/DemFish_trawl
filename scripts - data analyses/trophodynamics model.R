@@ -123,12 +123,12 @@ library(Metrics)
   par(mfrow=c(1,2), mar=c(4, 4, 2, 1))
   plot(log10(bio),log10(biomass_obs),xlab="Predicted biomass",main="Tropho. dynamic eq.",
        ylab="Observed biomass",xaxt="n",yaxt="n",xlim=c(-0.25,2.7),ylim=c(-0.25,2.7),pch=16)
-  lines(y,x,lty=5)
+  lines(y,x,lty=1)
   axis(1,c(0,1,2),c("1","10","100"))
   axis(2,c(0,1,2),c("1","10","100"),las=1)
-  abline(0,1)
+  abline(0,1,lty=5)
   text(2,0,"RMSE = 0.38 \n R2 = 0.66")
-  text(0,2.6,"a)")
+  text(0,2.6,"")
   
   dat$LER <- log10(dat$ER)
   dat$biomass <- dat$biomass/1000
@@ -137,7 +137,7 @@ library(Metrics)
   dat <- dat[-6,]
   biorep <- biomass_obs[-6]
   mod1 <- lm(log10(dat$stat_pred)~log10(biorep))
-  plot(log10(dat$stat_pred),log10(biorep),,xlab="Predicted biomass",main="SEM prediction",
+  plot(log10(dat$stat_pred),log10(biorep),xlab="Predicted biomass",main="SEM prediction",
        ylab="",xaxt="n",yaxt="n",xlim=c(-0.25,2.7),ylim=c(-0.25,2.7),pch=16)
   x <- c(-1,4)
   y <- mod1$coefficients[1] + mod1$coefficients[2]*x
@@ -150,6 +150,24 @@ library(Metrics)
   text(0,2.6,"b)")
   dev.off()
 
+#-------------------------------------------------------------------------------
+# get sensitivity values for the result section
+  TE <- 0.075 * 0.55 ^((dat$SST_time-10)/10)
+  TE <- mean(TE)
+  bio <- dat$ben_prod*TE^(dat$tlw-1) + dat$frac*dat$z_prod*TE^(dat$tlw-2.1) /dat$ER
+  mod1 <- lm(log10(bio)~log10(dat$biomass))
+  summary(mod1)$adj.r.squared
+  
+  TE <- 0.075 * 0.55 ^((dat$SST_time-10)/10)
+  bio <- dat$ben_prod*TE^(dat$tlw-1) + dat$frac*dat$z_prod*TE^(dat$tlw-2.1) / mean(dat$ER)
+  mod1 <- lm(log10(bio)~log10(dat$biomass))
+  summary(mod1)$adj.r.squared
+  
+  TE <- 0.075 * 0.55 ^((dat$SST_time-10)/10)
+  bio <- dat$ben_prod*TE^(dat$tlw-1) + dat$frac*mean(dat$z_prod)*TE^(dat$tlw-2.1) / dat$ER
+  mod1 <- lm(log10(bio)~log10(dat$biomass))
+  summary(mod1)$adj.r.squared
+  
 #-------------------------------------------------------------------------------
 # get prediction for the subdivisions - supplement
   dat    <- get_bio(cpue_good,t_start = 1990,t_end = 2015,spatialunit = "subdivision")  # spatialunit = "ECO_REG" or "subdivision"
@@ -177,12 +195,12 @@ library(Metrics)
   par(mfrow=c(1,2), mar=c(4, 4, 2, 1))
   plot(log10(bio),log10(biomass_obs),xlab="Predicted biomass",main="Tropho. dynamic eq.",
        ylab="Observed biomass",xaxt="n",yaxt="n",xlim=c(-0.25,2.7),ylim=c(-0.25,2.7),pch=16)
-  lines(y,x,lty=5)
+  lines(y,x,lty=1)
   axis(1,c(0,1,2),c("1","10","100"))
   axis(2,c(0,1,2),c("1","10","100"),las=1)
-  abline(0,1)
+  abline(0,1,lty=5)
   text(2,0,"RMSE = 0.39 \n R2 = 0.65")
-  text(0,2.6,"a)")
+  text(0,2.6)
   
   dat$LER <- log10(dat$ER)
   dat$biomass <- dat$biomass/1000
@@ -191,14 +209,14 @@ library(Metrics)
   dat <- dat[-c(20,24),]
   biorep <- biomass_obs[-c(20,24)]
   mod1 <- lm(log10(dat$stat_pred)~log10(biorep))
-  plot(log10(dat$stat_pred),log10(biorep),,xlab="Predicted biomass",main="SEM prediction",
+  plot(log10(dat$stat_pred),log10(biorep),xlab="Predicted biomass",main="SEM prediction",
        ylab="",xaxt="n",yaxt="n",xlim=c(-0.25,2.7),ylim=c(-0.25,2.7),pch=16)
   x <- c(-1,4)
   y <- mod1$coefficients[1] + mod1$coefficients[2]*x
-  lines(y,x,lty=5)
+  lines(y,x,lty=1)
   axis(1,c(0,1,2),c("1","10","100"))
   axis(2,c(0,1,2),c("","",""),las=1)
-  abline(0,1)
+  abline(0,1,lty=5)
   points(c(-0.25,-0.25),log10(biomass_obs[c(20,24)]),pch=8)
   text(2,0,"RMSE = 0.30 \n R2 = 0.42")
   text(0,2.6,"b)")

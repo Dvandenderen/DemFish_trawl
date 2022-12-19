@@ -135,7 +135,8 @@ library(lavaan)
   library(ggplot2)
   library(viridis)
   library(gridExtra)  
-
+  library(latex2exp)
+  
   # prepare map
   ctrys <- rnaturalearth::ne_countries(scale = 50, returnclass = "sf")
   minlong <- -180 #round(min(filedata$long)-1)
@@ -169,7 +170,9 @@ for (j in 1:6){
   mod1 <- lm(biomass ~ tlw + ER_log + SST_time +  z_prod,dat=datbio)
   #plot(mod1) # residuals in most runs reasonable  
   datbio$residuals <- residuals(mod1)
-
+  datbio$residuals <- ifelse(datbio$residuals > 50, 50,datbio$residuals)
+  datbio$residuals <- ifelse(datbio$residuals < -50, -50,datbio$residuals)
+  
   resplot <- subset(cpue_good,cpue_good$year %in% c(tst[j]:ten[j]))
   freq_dat <- as.data.frame(table(resplot$uni_cell))
   freq_dat <- subset(freq_dat,freq_dat$Freq > 1)
@@ -184,7 +187,9 @@ for (j in 1:6){
   # plot map
   figmap <- ggplot(nco) + 
     geom_sf( aes(fill=resid), colour = NA ) + ggtitle(figlab[j]) +
-    scale_fill_viridis(name="Residual biomass \n (MT/km2)") +
+    scale_fill_viridis_c(name="Residual biomass \n (MT/km2)",limits=c(-50,50),
+                         labels = c(TeX("$\\leq$-50"),"-25","0","25",TeX("$\\geq$50")),
+                         breaks=c(-50,-25,0,25,50)) +
     geom_sf(data = ctrys, fill="grey",colour=NA) 
   
   figmap <-  figmap +  theme(plot.background=element_blank(),

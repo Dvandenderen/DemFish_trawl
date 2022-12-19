@@ -15,12 +15,12 @@ par(mfrow=c(1,2), mar=c(4, 4, 2, 1))
 
 plot(log10(stock$biomass),log10(stock$wt_q),xlim=c(-1,8),ylim=c(-1,8),xlab="Stock assess. biomass - log10(MT)",
      ylab="Survey biomass - log10(MT)",main="",las=1,pch=16)
-abline(0,1)
+abline(0,1,lty=5)
 text(-0.5,7.5,"a)")
 mod1 <- lm(log10(stock$wt_q)~log10(stock$biomass))
 x <- c(-1,9)
 y <- coefficients(mod1)[1] + coefficients(mod1)[2]*x 
-lines(y~x,lty=5)
+lines(y~x,lty=1)
 
 text(6,0,"RMSE = 0.88 \n R2 = 0.61")
 
@@ -29,12 +29,12 @@ text(6,0,"RMSE = 0.88 \n R2 = 0.61")
 
 plot(log10(stock$biomass),log10(stock$wt),xlim=c(-1,8),ylim=c(-1,8),xlab="Stock assess. biomass - log10(MT)",
      ylab="",main="",las=1,pch=16)
-abline(0,1)
+abline(0,1,lty=5)
 text(-0.5,7.5,"b)")
 mod1 <- lm(log10(stock$wt)~log10(stock$biomass))
 x <- c(-1,9)
 y <- coefficients(mod1)[1] + coefficients(mod1)[2]*x 
-lines(y~x,lty=5)
+lines(y~x,lty=1)
 
 text(6,0,"RMSE = 1.25 \n R2 = 0.54")
 
@@ -46,7 +46,7 @@ par(mfrow=c(2,3), mar=c(4, 4, 2, 1))
 pac <- subset(stock,stock$region %in% c("US West Coast","Canada West Coast","US Alaska"))
 
 plot(log10(pac$biomass),log10(pac$wt_q),xlim=c(-1,8),ylim=c(-1,8),xlab="",
-     ylab="Survey biomass - log10(MT)",main="Pacific",las=1,pch=16)
+     ylab="Survey biomass - log10(MT)",main="Northeast Pacific",las=1,pch=16)
 abline(0,1)
 text(-0.5,7.5,"a)")
 
@@ -82,9 +82,11 @@ pel <- c("Bluefish Atlantic Coast",
          "Herring NAFO 4T fall and spring spawners")
 
 pelstoc <- subset(stock,stock$stocklong %in% pel)
-
+her <- pelstoc[c(3:14,18),]
+pelstoc <- pelstoc[-c(3:14,18),]
 plot(log10(pelstoc$biomass),log10(pelstoc$wt_q),xlim=c(-1,8),ylim=c(-1,8),xlab="",
      ylab="Survey biomass - log10(MT)",main="Pelagic stocks",las=1,pch=16)
+points(log10(her$biomass),log10(her$wt_q),pch="+")
 abline(0,1)
 text(-0.5,7.5,"d)")
 
