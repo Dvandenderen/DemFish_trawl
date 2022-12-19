@@ -1,7 +1,10 @@
 
 # ------------------------------------------------------------------------------
-# step 1 -  cleaning of all individual data sets
+# step 1 -  processomg of all individual data sets
 # ------------------------------------------------------------------------------
+  # compile_DATRAS_with_catchability.R
+  # compile_NORBTS_with_catchability.R
+  # compile_oceanadapt_dvd.R
 
 # ------------------------------------------------------------------------------
 # step 2 - create surveyed grid
@@ -31,16 +34,18 @@
 
 
 # ------------------------------------------------------------------------------
-# Step 5 - run statistical models - spatial
+# Step 5 - run statistical models - spatial and trophodynamic equation
 # ------------------------------------------------------------------------------
  
   # --> "scripts - data analyses/Spatial analysis.R"
   # --> "figures/SEM - knitted output/Rmd"
+  # --> "scripts - "scripts - data analyses/Spatial analysis local grid resolution.R"
+  # --> "scripts - "scripts - data analyses/trophodynamics model.R"
 
 # ------------------------------------------------------------------------------
 # Step 6 - get grid cells that can be used to analyse time-series
 # ------------------------------------------------------------------------------
   # --> "scripts - data analyses/Obtain_data_for_regional_statistics_timeseries.R"
-
+  # --> "scripts - data analyses/Timeseries_analysis_recursive.R"
 
 

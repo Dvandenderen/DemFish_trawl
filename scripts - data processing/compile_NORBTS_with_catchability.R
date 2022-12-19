@@ -3,8 +3,9 @@
 #### Coding: Aurore Maureaud, March 2021
 
 #### 
-#### Coding updated for wingspread / catch per unit area information
-#### Coding updated with gear efficiency estimates based on Walker et al. 2017
+#### Coding updated by Daniel van Denderen:
+#### added wingspread / catch per unit area information
+#### added gear efficiency estimates based on Walker et al. 2017
 #### see https://doi.org/10.1093/icesjms/fsw250
 #############################################################
 
