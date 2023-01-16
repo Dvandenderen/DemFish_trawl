@@ -1,2 +1,5 @@
-# DemFish_trawl
-Bottom trawl survey biomass and production
+# Esimating demersal fish commmunity biomass from the Northeast Pacific and North Atlantic shelf regions
+
+The data processing scripts are modified based on earlier work from Pinsky et al. (2013) and Maureaud et al. (2019). The final dataset contains approx. 180,000 unique tows and includes data from 1970 to 2019. All data used are publicly available and were downloaded in July 2021. We selected scientific surveys that sampled the fish community with otter trawls. For each tow in each survey, we selected all demersal teleost and elasmobranch species and obtained species weight. We corrected these weights for differences in sampling area (in km2) and trawl gear catchability. The final data gives a standardized fish biomass (in kg per km2) across hauls and surveys. 
+
+The data were used to examine the effects of temperature, and other environmental variables, on fish community biomass. A pre-print with the results is available here: https://www.authorea.com/users/572236/articles/617165-demersal-fish-biomass-declines-with-temperature-across-productive-shelf-seas?commit=5c7b563907fa978108bda236ea9099ac2da9b633
