@@ -1,5 +1,7 @@
 # Demersal fish commmunity biomass in the Northeast Pacific and North Atlantic shelf regions.
 
+[![DOI](https://zenodo.org/badge/395102730.svg)](https://zenodo.org/badge/latestdoi/395102730)
+
 The data processing scripts are modified based on earlier work from Pinsky et al. (2013) and Maureaud et al. (2019). The final dataset contains approx. 197,000 
 unique tows and includes data from 1970 to 2019 (166,000 tows between 1980-2015). All data used are publicly available and were downloaded in July 2021. We selected scientific surveys that sampled the fish community with (predominantly) otter trawls. For each tow in each survey, we selected all teleost and elasmobranch species and obtained species weight. We corrected these weights for differences in sampling area (in km2) and trawl gear catchability.
 
