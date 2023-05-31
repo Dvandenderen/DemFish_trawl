@@ -122,7 +122,7 @@ rm(list=ls())
 # add fisheries landings information
 # --------------------------------------------------------------------------------
 
-  # load Regs fisheries database (v4.0)
+  # load Reg's fisheries database (v4.0)
   Fisheriesfolder <- "C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Data analysis"
   C8084 <- readRDS(paste(Fisheriesfolder,"Catch_all_1980_1984.rds",sep="/"))
   C8589 <- readRDS(paste(Fisheriesfolder,"Catch_all_1985_1989.rds",sep="/"))

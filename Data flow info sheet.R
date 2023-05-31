@@ -1,7 +1,24 @@
 
 # ------------------------------------------------------------------------------
-# step 1 -  processomg of all individual data sets
+# The data processing scripts are modified based on earlier work from Pinsky et 
+# al. (2013) and Maureaud et al. (2019). The final dataset contains approx. 
+# 180,000 unique tows and includes data from 1970 to 2019. All data used are 
+# publicly available and were downloaded in July 2021. We selected scientific 
+# surveys that sampled the fish community with (predominantly) otter trawls. 
+# For each tow in each survey, we selected all demersal teleost and elasmobranch 
+# species and obtained species weight. We corrected these weights for 
+# differences in sampling area (in km2) and trawl gear catchability. The 
+# final data gives a standardized fish biomass (in kg per km2) per species, 
+# haul and survey.
+#
+# The data were used to examine the effects of temperature, and other 
+# environmental variables, on fish community biomass in the Northeast Pacific 
+# and North Atlantic shelf regions.
+
 # ------------------------------------------------------------------------------
+# step 1 -  processing of all individual data sets
+# ------------------------------------------------------------------------------
+  # individual data sets can be found in the data folder
   # compile_DATRAS_with_catchability.R
   # compile_NORBTS_with_catchability.R
   # compile_oceanadapt_dvd.R
@@ -27,23 +44,22 @@
   # -->  "figures/Stock_ass_figure.R"
 
 # ------------------------------------------------------------------------------
-# Step 4 - create datasets for statistical model per grid 
+# Step 4 - create datasets for statistical model
 # ------------------------------------------------------------------------------
 
   # --> "scripts - data analyses/Obtain_data_for_regional_statistics.R"
-
+  
 
 # ------------------------------------------------------------------------------
 # Step 5 - run statistical models - spatial and trophodynamic equation
 # ------------------------------------------------------------------------------
  
   # --> "scripts - data analyses/Spatial analysis.R"
-  # --> "figures/SEM - knitted output/Rmd"
-  # --> "scripts - "scripts - data analyses/Spatial analysis local grid resolution.R"
-  # --> "scripts - "scripts - data analyses/trophodynamics model.R"
+  # --> "scripts - data analyses/Spatial analysis local grid resolution.R"
+  # --> "scripts - data analyses/Trophodynamics_model.R"
 
 # ------------------------------------------------------------------------------
-# Step 6 - get grid cells that can be used to analyse time-series
+# Step 6 - analyse time-series
 # ------------------------------------------------------------------------------
   # --> "scripts - data analyses/Obtain_data_for_regional_statistics_timeseries.R"
   # --> "scripts - data analyses/Timeseries_analysis_recursive.R"
