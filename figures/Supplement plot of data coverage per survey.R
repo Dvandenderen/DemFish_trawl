@@ -1,6 +1,6 @@
 # make supplement plot of data coverage per survey
 
-adapt <- readRDS("cleaned data/all-regions-full-oceanadapt.rds")
+adapt <- readRDS("processed data/all-regions-full-oceanadapt.rds")
 
 library(ggplot2)
 ctrys <- rnaturalearth::ne_countries(scale = 50, returnclass = "sf")
@@ -192,7 +192,7 @@ coordymap <- round(seq(minlat,maxlat,length.out = 4))
    scale_y_continuous(breaks=coordymap) + geom_point(data=dat,aes(x=lon,y=lat),size=0.25)
  
  #### now get the ICES surveys
- load("cleaned data/ICESsurveys10Aug_withq.RData")
+ load("processed data/ICESsurveys10Aug_withq.RData")
 
  dat <- subset(survey3,survey3$Survey %in% c("NS-IBTS")) 
  dat <- dat[!duplicated(dat$HaulID), ]
@@ -290,7 +290,7 @@ coordymap <- round(seq(minlat,maxlat,length.out = 4))
     scale_y_continuous(breaks=coordymap) + geom_point(data=dat,aes(x=ShootLong,y=ShootLat),size=0.25) 
  
  #### now get norwegian surveys
- load("cleaned data/NORBTSJuly2022_withq.RData")
+ load("processed data/NORBTSJuly2022_withq.RData")
  norw   <- norw_dat
  
  # rename corrected data based on gear efficiency q's

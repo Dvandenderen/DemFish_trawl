@@ -13,11 +13,11 @@ library(tidyverse)
 library(lavaan)
 
 ##################
-load("cleaned data/surveyed_grid.RData") # get grid information
-load("cleaned data/Depth_grid.RData") # get depth per grid cell and year
-load("cleaned data/Biomass_grid.RData") # get biomass per grid cell and year
-load("cleaned data/sstdat_1967_2018_COBE.RData") # get SST COBE
-load("cleaned data/tdat_1993_2016_Glorys.RData")
+load("processed data/surveyed_grid.RData") # get grid information
+load("processed data/Depth_grid.RData") # get depth per grid cell and year
+load("processed data/Biomass_grid.RData") # get biomass per grid cell and year
+load("processed data/sstdat_1967_2018_COBE.RData") # get SST COBE
+load("processed data/tdat_1993_2016_Glorys.RData")
 
 source("scripts - data analyses/source_get_watercol_temp.R") # source script to obtain biomass per ecoregion/subdiv
 

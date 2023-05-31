@@ -15,7 +15,7 @@ rm(list=ls())
 # load survey data and spatial object of the area surveyed
 # --------------------------------------------------------------------------------
 
-  load("cleaned data/surveyed_grid.RData")
+  load("processed data/surveyed_grid.RData")
   source("scripts - data processing/source_combine_all_surveys_after_cleaning.R")
 
 # --------------------------------------------------------------------------------
@@ -184,7 +184,7 @@ rm(list=ls())
 # --------------------------------------------------------------------------------
 # add SST information
 # --------------------------------------------------------------------------------
-  load("cleaned data/sstdat_1967_2018_COBE.RData")  # obtain SST
+  load("processed data/sstdat_1967_2018_COBE.RData")  # obtain SST
   
   cpue_good$SST <- NA
   for(j in 1:nrow(cpue_good)){
@@ -198,7 +198,7 @@ rm(list=ls())
 # --------------------------------------------------------------------------------
 # add Btemp information
 # --------------------------------------------------------------------------------
-  load("cleaned data/tdat_1993_2016_Glorys.RData")  # obtain bottom temp
+  load("processed data/tdat_1993_2016_Glorys.RData")  # obtain bottom temp
   
   cpue_good$SBT <- NA
   for(j in 1:nrow(cpue_good)){
@@ -217,4 +217,4 @@ rm(list=ls())
   #cpue_good <- subset(cpue_good,!(cpue_good$ECO_REG =="Northern Gulf of Mexico" & cpue_good$year %in% c(1982:1984)))
 
   # save data 
-  save(cpue_good,file="cleaned data/Biomass_timeseries_grid.RData")
+  save(cpue_good,file="processed data/Biomass_timeseries_grid.RData")

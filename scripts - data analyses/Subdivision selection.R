@@ -2,7 +2,7 @@
 # goal is to get a spatial scale that is finer than ecoregion but larger than local grid
 # Pacific selection is based on Ware & Thomson DOI: 10.1126/science.1109049
 
-load("cleaned data/surveyed_grid.RData")
+load("processed data/surveyed_grid.RData")
 xdat <- data.frame(grid_master@data$uni_cell,grid_master@data$ECO_REG,coordinates(grid_master),
                    grid_master@data$Depth_map)
 colnames(xdat) <- c("uni","ECO_REG","long","lat","Depth")
@@ -240,4 +240,4 @@ grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Barents2$uni,"B
 grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Barents3$uni,"Barents3",grid_master@data$subdivision)
 grid_master@data$subdivision <- ifelse(grid_master@data$uni %in% Barents4$uni,"Barents4",grid_master@data$subdivision)
 
-save(grid_master,file="cleaned data/surveyed_grid.RData")
+save(grid_master,file="processed data/surveyed_grid.RData")

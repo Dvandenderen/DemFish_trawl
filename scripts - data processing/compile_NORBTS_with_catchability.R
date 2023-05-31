@@ -607,7 +607,7 @@ lengthcl <- lengthcl %>%
 
 norw_dat <- left_join(subgroup, lengthcl, by=c('HaulID','Species'))
 
-save(norw_dat, file='cleaned data/NORBTSJuly2022_withq.RData')
+save(norw_dat, file='processed data/NORBTSJuly2022_withq.RData')
 
 
 ##########################################################################################

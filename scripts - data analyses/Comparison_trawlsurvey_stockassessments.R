@@ -26,7 +26,7 @@ library(sf)
 ram <- readRDS(paste(getwd(),'_noGIT/ramlegacy/4.44/RLSADB v4.44/DB Files With Assessment Data/v4.44.rds',sep=""))
 
 # get estimate of area overlap between stock assessments and survey area
-load("cleaned data/overlap_stockass_survey_area.RData")
+load("processed data/overlap_stockass_survey_area.RData")
 colnames(final) <- c("areanb","overlap","name") # to simplify script
 
 # now find all regions that overlap a large part of their area with the surveyed area in the ocean
@@ -79,7 +79,7 @@ stock$catch <- ifelse(is.na(stock$TC),stock$TL,stock$TC)
 stock$frac <- stock$catch / stock$biomass # if larger than 1 unrealistic
 stock <- subset(stock,stock$frac < 1)
 
-# get cleaned survey data
+# get processed survey data
 source("scripts - data processing/source_combine_all_surveys_after_cleaning.R")
 trawl <- subset(trawl, trawl$year %in% c(2000:2005))
 
@@ -94,7 +94,7 @@ coords[,2] <- as.numeric(as.character(coords[,2]))
 coords[,3] <- coords_uni
 
 # load surveyed grid
-load("cleaned data/surveyed_grid.RData")
+load("processed data/surveyed_grid.RData")
 
 # combine observations with surveyed grid
 coord <-data.frame(Longitude = coords[,1], Latitude = coords[,2])
@@ -238,4 +238,4 @@ colnames(stocksave)[10] <- "area_overlap_in_ocean"
 colnames(stocksave)[23] <- "survey_biomass_uncorrected"
 colnames(stocksave)[24] <- "survey_biomass_corrected"
 
-write.csv(stocksave,file="cleaned data/stock assessment comparison.csv",row.names = F)
+write.csv(stocksave,file="processed data/stock assessment comparison.csv",row.names = F)

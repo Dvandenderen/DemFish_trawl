@@ -16,7 +16,7 @@ library(sf)
 source("scripts - data processing/source_combine_all_surveys_after_cleaning.R")
 
 # load surveyed grid
-load("cleaned data/surveyed_grid.RData")
+load("processed data/surveyed_grid.RData")
 
 # aggregate to one polygon
 survey_area <- aggregate(grid_master)
@@ -80,7 +80,7 @@ colnames(final)[3]<-c("assess_area_name")
 #plot(survey_area,add=T,col="blue")
 #plot(shape[19,],add=T,col="red")
 
-save(final,file="cleaned data/overlap_stockass_survey_area.RData")
+save(final,file="processed data/overlap_stockass_survey_area.RData")
 
 rm(list=setdiff(ls(), c("final","trawl")))
 

@@ -9,7 +9,7 @@ library(nlme)
 # load grid cell time series and estimate the average per ecoregion and year
 # -------------------------------------------------------------------------------
 
- load("cleaned data/Biomass_timeseries_grid.RData")
+ load("processed data/Biomass_timeseries_grid.RData")
  cpue_good <- subset(cpue_good,cpue_good$year %in% c(1980:2015))
 
  # get weighted mean based on size of ocean area

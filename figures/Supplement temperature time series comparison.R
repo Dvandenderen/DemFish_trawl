@@ -1,5 +1,5 @@
 
-load("cleaned data/surveyed_grid.RData")
+load("processed data/surveyed_grid.RData")
 grid <- grid_master@data[,c(1,4,6)]
 grid <- do.call("rbind", replicate(length(1993:2015), grid, simplify = FALSE))
 grid$year <- rep(1993:2015, each=nrow(grid_master@data))
@@ -8,7 +8,7 @@ grid$year <- rep(1993:2015, each=nrow(grid_master@data))
 # add SST information
 # --------------------------------------------------------------------------------
 
-load("cleaned data/sstdat_1967_2018_COBE.RData")  # obtain SST
+load("processed data/sstdat_1967_2018_COBE.RData")  # obtain SST
 
 grid <- subset(grid,grid$uni_cell %in% sstdat$uni_cell)
 
@@ -24,7 +24,7 @@ for(j in 1:nrow(grid)){
 # --------------------------------------------------------------------------------
 # add Btemp information
 # --------------------------------------------------------------------------------
-load("cleaned data/tdat_1993_2016_Glorys.RData")  # obtain bottom temp
+load("processed data/tdat_1993_2016_Glorys.RData")  # obtain bottom temp
 
 grid$SBT <- NA
 for(j in 1:nrow(grid)){

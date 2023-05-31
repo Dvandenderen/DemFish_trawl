@@ -15,7 +15,7 @@ rm(list=ls())
 ## load survey data and spatial object of the area surveyed
 # --------------------------------------------------------------------------------
 
-  load("cleaned data/surveyed_grid.RData")
+  load("processed data/surveyed_grid.RData")
   source("scripts - data processing/source_combine_all_surveys_after_cleaning.R")
 
 # --------------------------------------------------------------------------------
@@ -109,7 +109,7 @@ rm(list=ls())
     group_by(uni_cell,year) %>%
     summarise_at (c("depth"),mean, na.rm=T) %>%
     as.data.frame ()
-  save(depth_grid,file="cleaned data/Depth_grid.RData")
+  save(depth_grid,file="processed data/Depth_grid.RData")
 
   # clean and continue
   rm(list=setdiff(ls(), c("cpue","grid_master")))
@@ -183,4 +183,4 @@ rm(list=ls())
   cpue_good$Catch_pel_sqkm[is.na(cpue_good$Catch_pel_sqkm)] <- 0
 
   # save data 
-  save(cpue_good,file="cleaned data/Biomass_grid.RData")
+  save(cpue_good,file="processed data/Biomass_grid.RData")

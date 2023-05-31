@@ -692,4 +692,4 @@ cor(x = xx$wtcpue , y = xx$wgtlencpue, method = 'pearson')
 survey3 <- survey3 %>% 
   select(-num, -wgt) %>%
   as.data.frame()
-save(survey3, file='cleaned data/ICESsurveys10Aug_withq.RData')
+save(survey3, file='processed data/ICESsurveys10Aug_withq.RData')

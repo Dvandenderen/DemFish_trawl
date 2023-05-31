@@ -5,7 +5,7 @@
 
 library(Metrics)
 
-stock <- read.csv("cleaned data/stock assessment comparison.csv",header=T)
+stock <- read.csv("processed data/stock assessment comparison.csv",header=T)
 colnames(stock)[23] <- "wt"
 colnames(stock)[24] <- "wt_q"
 

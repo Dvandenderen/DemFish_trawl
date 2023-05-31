@@ -15,8 +15,8 @@ library(viridis)
 library(gridExtra)  
 
 ##################
-load("cleaned data/surveyed_grid.RData") # get grid information
-load("cleaned data/Biomass_grid.RData") # get biomass per grid cell and year
+load("processed data/surveyed_grid.RData") # get grid information
+load("processed data/Biomass_grid.RData") # get biomass per grid cell and year
 
 grid_master <- subset(grid_master,grid_master@data$uni_cell %in% cpue_good$uni_cell)
 

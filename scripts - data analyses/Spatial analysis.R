@@ -16,10 +16,10 @@ library(lavaan)
 # obtain data for the SEM
 # ------------------------------------------------------------------------------
 
-  load("cleaned data/surveyed_grid.RData") # get grid information
-  load("cleaned data/Depth_grid.RData") # get depth per grid cell and year
-  load("cleaned data/Biomass_grid.RData") # get biomass per grid cell and year
-  load("cleaned data/sstdat_1967_2018_COBE.RData") # get SST COBE
+  load("processed data/surveyed_grid.RData") # get grid information
+  load("processed data/Depth_grid.RData") # get depth per grid cell and year
+  load("processed data/Biomass_grid.RData") # get biomass per grid cell and year
+  load("processed data/sstdat_1967_2018_COBE.RData") # get SST COBE
   
   source("scripts - data analyses/source_get_bio_function.R") # source script to obtain biomass per ecoregion/subdiv
   
@@ -156,10 +156,10 @@ library(lavaan)
   source("scripts - data analyses/source_get_bio_function.R") 
   
 for (j in 1:6){
-  load("cleaned data/surveyed_grid.RData") # get grid information
-  load("cleaned data/Depth_grid.RData") # get depth per grid cell and year
-  load("cleaned data/Biomass_grid.RData") # get biomass per grid cell and year
-  load("cleaned data/sstdat_1967_2018_COBE.RData") # get SST COBE
+  load("processed data/surveyed_grid.RData") # get grid information
+  load("processed data/Depth_grid.RData") # get depth per grid cell and year
+  load("processed data/Biomass_grid.RData") # get biomass per grid cell and year
+  load("processed data/sstdat_1967_2018_COBE.RData") # get SST COBE
  
   datbio <- get_bio(cpue_good,t_start = tst[j],t_end = ten[j],spatialunit = unit[j])  # spatialunit = "ECO_REG" or "subdivision"
   datbio <- subset(datbio,datbio$countgrid >= 6)

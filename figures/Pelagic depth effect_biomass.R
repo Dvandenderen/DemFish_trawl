@@ -14,7 +14,7 @@ library(tidyverse)
 ###########
 ### load survey data and spatial object of the area surveyed
 ###########
-load("cleaned data/surveyed_grid.RData")
+load("processed data/surveyed_grid.RData")
 source("scripts - data processing/source_combine_all_surveys_after_cleaning.R")
 
 ##############################################

@@ -95,7 +95,7 @@ rm(list=ls())
   grid_master <- subset(grid_master,!(is.na(grid_master@data$ECO_REG)))
 
 # save grid
-  save(grid_master,file="cleaned data/surveyed_grid.RData")
+  save(grid_master,file="processed data/surveyed_grid.RData")
 
 ###########
 ###  now load Env conditions and link to surveyed grid
@@ -190,13 +190,13 @@ rm(list=ls())
   grid_master@data$long <- cds[,1]
   grid_master@data$lat <- cds[,2]
   
-  save(grid_master,file="cleaned data/surveyed_grid.RData")
+  save(grid_master,file="processed data/surveyed_grid.RData")
 
 ###########
 ### get subdivisions 
 ###########
   source("scripts - data analyses/Subdivision selection.R")
-  save(grid_master,file="cleaned data/surveyed_grid.RData")
+  save(grid_master,file="processed data/surveyed_grid.RData")
 
 ###########
 ### check the data

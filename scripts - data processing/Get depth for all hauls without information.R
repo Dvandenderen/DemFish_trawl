@@ -28,4 +28,4 @@ for(i in 1:nrow(tt)){
 # save ETOPO depths
 depth_haul <- tt[,c(1,9)]
 depth_haul$depth <- abs(depth_haul$depth)
-save(depth_haul,file="cleaned data/Depth_hauls_NA.RData")
+save(depth_haul,file="processed data/Depth_hauls_NA.RData")

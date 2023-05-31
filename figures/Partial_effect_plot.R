@@ -12,26 +12,15 @@ library(sf)
 library(tidyverse)
 
 ##################
-load("cleaned data/surveyed_grid.RData") # get grid information
-load("cleaned data/Depth_grid.RData") # get depth per grid cell and year
-load("cleaned data/Biomass_grid.RData") # get biomass per grid cell and year
-load("cleaned data/sstdat_1967_2018_COBE.RData") # get SST COBE
+load("processed data/surveyed_grid.RData") # get grid information
+load("processed data/Depth_grid.RData") # get depth per grid cell and year
+load("processed data/Biomass_grid.RData") # get biomass per grid cell and year
+load("processed data/sstdat_1967_2018_COBE.RData") # get SST COBE
 source("scripts - data analyses/source_get_bio_function.R") # source script to obtain biomass per ecoregion/subdiv
 
 dat <- get_bio(cpue_good,t_start = 2000,t_end = 2005,spatialunit = "subdivision")  # spatialunit = "ECO_REG" or "subdivision"
 dat$LER <- log10(dat$Catch_sqkm/dat$biomass)
 dat$biomass <- dat$biomass/1000
-
-#source("scripts - data analyses/Source_partial_effect_lm.R")
-#
-#pdf("figures/Partial effect.pdf",width=7.5,height=2.8)
-#par(mfrow=c(1,4), mar=c(6, 4, 2, 1))
-#mod1 <- lm(biomass~ LER + SST_time + tlw  + lz_prod, data=dat)
-#effect(mod1,"SST_time",0.95,x.label="Temp.",rug =T,y.label = "Partial biomass effect", line.color='blue')
-#effect(mod1,"LER",0.95,x.label="Fishing exploit. rate",rug =T,y.label = "", line.color='blue')
-#effect(mod1,"tlw",0.95,x.label="Mean trophic level",rug =T,y.label = "",line.color='blue')
-#effect(mod1,"lz_prod",0.95,x.label="Zoop. prod.",rug =T,y.label = "",line.color='blue')
-#dev.off()
 
 ################
 # partial effect for each spatial scale and time period
@@ -66,7 +55,7 @@ dat6$LER <- log10(dat6$Catch_sqkm/dat6$biomass)
 dat6$biomass <- dat6$biomass/1000
 dat6$z_prod  <- dat6$lz_prod + dat6$mz_prod 
 
-source("scripts - data analyses/Source_partial_effect_lm.R")
+source("scripts - data analyses/Source_partial_effect_lm.R") 
 
 pdf("figures/Partial effect.pdf",width=7.5,height=2.8)
 par(mfrow=c(1,4), mar=c(6, 4, 2, 1))

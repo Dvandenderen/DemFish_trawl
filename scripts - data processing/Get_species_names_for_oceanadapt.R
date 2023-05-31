@@ -3,7 +3,7 @@ library(worms)
 library(worrms)
 library(stringr)
 
-full <- readRDS("cleaned data/all-regions-full-oceanadapt.rds")
+full <- readRDS("processed data/all-regions-full-oceanadapt.rds")
 spec <- unique(full$spp)
 spec <- str_remove_all(spec, " spp.")
 spec <- str_remove_all(spec, " sp.")

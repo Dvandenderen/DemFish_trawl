@@ -19,10 +19,10 @@ library(Metrics)
 #-------------------------------------------------------------------------------
 
 # select data
-  load("cleaned data/surveyed_grid.RData") # get grid information
-  load("cleaned data/Depth_grid.RData") # get depth per grid cell and year
-  load("cleaned data/Biomass_grid.RData") # get biomass per grid cell and year
-  load("cleaned data/sstdat_1967_2018_COBE.RData") # get SST COBE
+  load("processed data/surveyed_grid.RData") # get grid information
+  load("processed data/Depth_grid.RData") # get depth per grid cell and year
+  load("processed data/Biomass_grid.RData") # get biomass per grid cell and year
+  load("processed data/sstdat_1967_2018_COBE.RData") # get SST COBE
   source("scripts - data analyses/source_get_bio_function.R") # source script to obtain biomass per ecoregion/subdiv
 
   dat    <- get_bio(cpue_good,t_start = 1990,t_end = 2015,spatialunit = "ECO_REG")  # spatialunit = "ECO_REG" or "subdivision"

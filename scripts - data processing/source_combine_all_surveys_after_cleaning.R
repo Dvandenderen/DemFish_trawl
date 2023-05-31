@@ -12,7 +12,7 @@
 # --------------------------------------------------------------------------------
 # load Datras data #
 # --------------------------------------------------------------------------------
-  load("cleaned data/ICESsurveys10Aug_withq.RData")
+  load("processed data/ICESsurveys10Aug_withq.RData")
   datras <- survey3
   datras <- subset(datras,!(datras$Survey == "Can-Mar"))
   
@@ -42,7 +42,7 @@
 # load Norway data #
 # --------------------------------------------------------------------------------
 
-  load("cleaned data/NORBTSJuly2022_withq.RData")
+  load("processed data/NORBTSJuly2022_withq.RData")
   norw   <- norw_dat
 
   # rename corrected data based on gear efficiency q's
@@ -86,8 +86,8 @@
 # load oceanadapt data #
 # --------------------------------------------------------------------------------
 
-  adapt <- readRDS("cleaned data/all-regions-full-oceanadapt.rds")
-  load("C:/Users/danie/Dropbox/Werk/Demersal fish and fisheries/Gear and catches/oceanadapt_species_qvalues.RData")
+  adapt <- readRDS("processed data/all-regions-full-oceanadapt.rds")
+  load("traits and species/oceanadapt_species_qvalues.RData")
 
   adapt <- cbind(adapt,gd_new[match(adapt$spp,gd_new$spec),c("family","Efficiency")])
   adapt <- subset(adapt,!(is.na(adapt$Efficiency))) # all others are invertebrates
@@ -163,7 +163,7 @@
   # run -- Get depth for all hauls without information.R (ETOPO dataset is outside github)
   # no need to re-run
 
-  load("cleaned data/Depth_hauls_NA.RData")
+  load("processed data/Depth_hauls_NA.RData")
   trawl <- cbind(trawl,depth_haul[match(trawl$haulid,depth_haul$haulid),c("depth")])
   colnames(trawl)[ncol(trawl)] <- "depth2"
   trawl$depth <- ifelse(is.na(trawl$depth),trawl$depth2,trawl$depth)
