@@ -57,7 +57,7 @@ dat6$z_prod  <- dat6$lz_prod + dat6$mz_prod
 
 source("scripts - data analyses/Source_partial_effect_lm.R") 
 
-pdf("figures/Partial effect.pdf",width=7.5,height=2.8)
+pdf("figures/Partial_effect.pdf",width=7.5,height=2.8)
 par(mfrow=c(1,4), mar=c(6, 4, 2, 1))
 
 mod1 <- lm(biomass~ LER + SST_time + tlw + z_prod, data=dat1)

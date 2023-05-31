@@ -79,7 +79,7 @@ right <- ggplot() +
         axis.title.x  = element_text(size=11),
         strip.text.y = element_text(size = 8))
 
-pdf("figures/Timeseries_temperature.pdf",width=8.3,height=11.27)
+pdf("figures/Supp_timeseries_temperature.pdf",width=8.3,height=11.27)
 cowplot::plot_grid(left,right,nrow = 1)
 dev.off()
 

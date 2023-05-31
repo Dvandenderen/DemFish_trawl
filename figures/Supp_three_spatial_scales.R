@@ -173,7 +173,7 @@ figmap2 <-  figmap2 +  theme(plot.background=element_blank(),
 lower  <- cowplot::plot_grid(figmap1,figmap2,nrow = 1, rel_widths=c(0.60,0.40),labels = c('c)',''), label_size = 10,label_fontface="plain")
 
 
-png("figures/Spatial scales.png",width=8,height=10) 
+png("figures/Supp_three_spatial_scales.png",width=8,height=10) 
 grid.arrange(upper, middle, lower, nrow = 3,
              left = "Latitude",bottom = "Longitude")
 dev.off()

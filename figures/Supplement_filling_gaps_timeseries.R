@@ -29,7 +29,7 @@ colnames(cells)[ncol(cells)] <-"y_2003"
 
 cells$onegap <- rowMeans(cells[,c(2,4)])
 
-pdf("figures/filling_timeseries.pdf",width=8,height=8) 
+pdf("figures/Supplement_filling_gaps_timeseries.pdf",width=8,height=8) 
 
 par(mfrow = c(2, 2))
 plot(log10(cells$y_2001/1000),log10(cells$onegap/1000),

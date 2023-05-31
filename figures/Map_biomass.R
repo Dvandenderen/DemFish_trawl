@@ -172,16 +172,17 @@ lower <- cowplot::plot_grid(sc1,sc2,sc3,nrow = 1, rel_widths=c(1.1,1,1),
                    labels = c('b)','c)','d)'), 
                    label_size = 10,label_fontface="plain")
 
-pdf("figures/biomass_map.pdf",width=10,height=6.9) 
+pdf("figures/Map_biomass.pdf",width=10,height=6.9) 
 cowplot::plot_grid(upper,lower,ncol=1,rel_heights = c(0.66,0.33),labels=c("","")) 
 dev.off()
 
-dat$ER_log  <- log10(dat$ER)
-cor.test(dat$bio,dat$ER_log, method="pearson")
-cor(dat$bio,dat$SST_time)
-cor(dat$bio,dat$NPP)
-cor(dat$bio,dat$lz_prod+dat$mz_prod)
-cor(dat$bio,dat$ben_prod)
-cor(dat$bio,dat$depth)
-cor(dat$bio,dat$tlw)
+# estimate correlations at ecoregion scale
+  dat$ER_log  <- log10(dat$ER)
+  cor.test(dat$bio,dat$ER_log, method="pearson")
+  cor(dat$bio,dat$SST_time)
+  cor(dat$bio,dat$NPP)
+  cor(dat$bio,dat$lz_prod+dat$mz_prod)
+  cor(dat$bio,dat$ben_prod)
+  cor(dat$bio,dat$depth)
+  cor(dat$bio,dat$tlw)
 
