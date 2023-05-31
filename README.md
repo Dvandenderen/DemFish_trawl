@@ -11,7 +11,7 @@ If the correction for gear catchability is not important, please use the FishGlo
 The data were used to examine the drivers of fish community biomass in the Northeast Pacific and North Atlantic shelf regions. A pre-print with the results is available here: 10.22541/au.167275091.18905396/v1
 
 ## Processed dataset
-Secondary data product is processed data for all three regions combined. The secondary data product is archived as a .csv data table in ZENODO with a DOI: xxx. The data table includes haul id, region, gear type, sampling year, sampling month, sampling coordinates (longitude, latitude), swept area, bottom depth, species taxonomy (species and family name), species trophic level, estimated weight (kg) per km2 and estimated weight (kg) per km2 corrected for gear catchability. The data product can also be obtained by running "scripts - data processing/source_combine_all_surveys_after_cleaning.R" 
+Secondary data product is processed data for all three regions combined. The secondary data product is archived as a .csv data table in ZENODO [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7992514.svg)](https://doi.org/10.5281/zenodo.7992514). The data table includes haul id, region, gear type, sampling year, sampling month, sampling coordinates (longitude, latitude), swept area, bottom depth, species taxonomy (species and family name), species trophic level, estimated weight (kg) per km2 and estimated weight (kg) per km2 corrected for gear catchability. The data product can also be obtained by running "scripts - data processing/source_combine_all_surveys_after_cleaning.R" 
 
 ## Scripts to analyse the data
 * Individual survey data sets can be found in the data folder. There are three data processing scripts:
